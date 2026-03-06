@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Geopolitical Alignment Index (1945-2025)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+    <style>
+        :root { 
+            --bg: #f8fafc; --text: #0f172a; --panel: #ffffff; --border: #cbd5e1; --unknown: #e2e8f0; --stroke: #94a3b8;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root { 
+                --bg: #020617; --text: #f1f5f9; --panel: #0f172a; --border: #1e293b; --unknown: #111827; --stroke: #334155;
+            }
+        }
+        body { background-color: var(--bg); color: var(--text); transition: background-color 0.2s ease; }
+        .panel { background-color: var(--panel); border-color: var(--border); }
+        .country { stroke: var(--stroke); stroke-width: 0.5px; transition: fill 0.3s ease; cursor: pointer; }
+        .country:hover { stroke-width: 1.2px; stroke: #3b82f6; }
+        
+        .tooltip {
+            position: fixed;
+            pointer-events: none;
+            background: rgba(15, 23, 42, 0.98);
+            color: white;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+            max-width: 280px;
+            border: 1px solid rgba(255,255,255,0.1);
+            line-height: 1.4;
+        }
+        input[type="range"] { height: 6px; border-radius: 3px; }
+        .legend-text { font-weight: 400 !important; font-size: 11px; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .spinner { border: 3px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+    </style>
+</head>
+<body class="font-sans overflow-hidden">
+
+<div class="flex flex-col h-screen">
+    <header class="panel border-b px-6 py-4 flex justify-between items-center shrink-0 z-20">
+        <div>
+            <h1 class="text-xl font-bold tracking-tight">Geopolitical Alignment Index</h1>
+            <p class="text-[10px] font-mono opacity-50 uppercase tracking-widest">Global Power Positioning (1945 – 2025)</p>
+        </div>
+        <div class="flex items-center gap-6">
+            <div id="year-display" class="text-5xl font-black text-red-600 w-36 text-right tabular-nums">1945</div>
+            <button id="play-pause" class="bg-red-600 hover:bg-red-700 text-white p-3 rounded-full shadow-lg transition-all active:scale-95 focus:outline-none">
+                <svg id="play-icon" class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                <svg id="pause-icon" class="hidden w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 relative flex overflow-hidden">
+        <div class="w-72 panel border-r p-6 flex flex-col gap-8 shrink-0 z-10 overflow-y-auto">
+            <section>
+                <h3 class="text-[10px] uppercase tracking-widest opacity-40 mb-4">Legend</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center gap-3"><div class="w-3.5 h-3.5 rounded bg-[#dc2626]"></div><span class="legend-text">Strong alignment</span></div>
+                    <div class="flex items-center gap-3"><div class="w-3.5 h-3.5 rounded bg-[#f87171]"></div><span class="legend-text">Mild alignment</span></div>
+                    <div class="flex items-center gap-3"><div class="w-3.5 h-3.5 rounded bg-[#64748b]"></div><span class="legend-text">Neutral</span></div>
+                    <div class="flex items-center gap-3"><div class="w-3.5 h-3.5 rounded bg-[#86efac]"></div><span class="legend-text">Mild opposition</span></div>
+                    <div class="flex items-center gap-3"><div class="w-3.5 h-3.5 rounded bg-[#16a34a]"></div><span class="legend-text">Strong opposition</span></div>
+                    <div class="flex items-center gap-3 pt-4 border-t border-slate-500/10 opacity-60">
+                        <div class="w-3.5 h-3.5 rounded border border-slate-500/30 bg-[var(--unknown)]"></div>
+                        <span class="legend-text italic">Unknown</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="mt-auto flex flex-col gap-3">
+                <div class="bg-red-600/5 border border-red-600/10 p-4 rounded-xl">
+                    <h4 class="text-[10px] font-bold text-red-600 uppercase mb-2">Historical Pulse</h4>
+                    <p id="insight-text" class="text-[11px] leading-relaxed opacity-80 italic">Analyzing global data...</p>
+                </div>
+                <button id="btn-analyze-era" class="w-full py-2.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-semibold rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 focus:outline-none">
+                    <span>✨ Analyze Era Context</span>
+                </button>
+            </section>
+        </div>
+
+        <div id="map-container" class="flex-1 relative bg-[var(--unknown)]">
+            <svg id="map" class="w-full h-full"></svg>
+            <div id="tooltip" class="tooltip"></div>
+        </div>
+    </main>
+
+    <footer class="panel border-t px-10 py-6 shrink-0 z-20">
+        <input type="range" id="year-slider" min="1945" max="2025" value="1945" step="1" class="w-full bg-slate-400/20 rounded-lg appearance-none cursor-pointer accent-red-600 focus:outline-none">
+        <div class="flex justify-between text-[11px] opacity-40 mt-4 font-mono font-bold">
+            <span>1945</span><span>1965</span><span>1985</span><span>2005</span><span>2025</span>
+        </div>
+    </footer>
+</div>
+
+<div id="gemini-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform scale-95 transition-transform duration-300 relative">
+        <div class="px-6 py-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
+            <h3 id="gemini-modal-title" class="text-sm font-bold text-white flex items-center gap-2">
+                <span class="text-lg">✨</span> AI Geopolitical Analysis
+            </h3>
+            <button onclick="forceCloseModal()" class="text-slate-400 hover:text-white p-2 focus:outline-none z-50">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+        <div class="p-6 max-h-[70vh] overflow-y-auto">
+            <div id="gemini-loading" class="flex flex-col items-center justify-center py-6 gap-4 hidden">
+                <div class="spinner border-blue-500 border-t-transparent"></div>
+                <p class="text-xs text-slate-400 animate-pulse">Consulting historical data...</p>
+            </div>
+            <div id="gemini-content" class="text-sm text-slate-300 leading-relaxed space-y-3"></div>
+            <div id="gemini-error" class="hidden bg-red-900/30 border border-red-500/30 text-red-300 p-4 rounded-lg text-xs">
+                An error occurred while fetching the analysis. Ensure API key is configured.
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const apiKey = "AIzaSyAOCU5W1ovPaEubEEeABylvMaPafJ2qw84"; 
+    
+    async function fetchWithRetry(url, options, retries = 5) {
+        const delays = [1000, 2000, 4000, 8000, 16000];
+        for (let i = 0; i < retries; i++) {
+            try {
+                const response = await fetch(url, options);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return await response.json();
+            } catch (e) {
+                if (i === retries - 1) throw e;
+                await new Promise(res => setTimeout(res, delays[i]));
+            }
+        }
+    }
+
+    async function callGeminiAPI(promptText) {
+        if (!apiKey) {
+            return `* **Simulation Mode:** API Key not detected.\n* **System:** Add key at line 133 of the HTML file.\n* **Context:** The requested data for ${currentYear} involves significant power rebalancing.`;
+        }
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+        const payload = {
+            contents: [{ parts: [{ text: promptText }] }],
+            systemInstruction: { parts: [{ text: "Act as a ruthless geopolitical analyst. Use bullet points. Be concise. Analyze structural power, resources, and hegemony, not moral ideology." }] }
+        };
+        try {
+            const response = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+            if (!response.ok) throw new Error("API HTTP Error");
+            const data = await response.json();
+            return data.candidates?.[0]?.content?.parts?.[0]?.text || "No actionable data returned.";
+        } catch (e) { throw e; }
+    }
+
+    const modal = document.getElementById('gemini-modal');
+    function openModal(title) {
+        document.getElementById('gemini-modal-title').innerHTML = `<span class="text-lg">✨</span> ${title}`;
+        document.getElementById('gemini-content').classList.add('hidden');
+        document.getElementById('gemini-error').classList.add('hidden');
+        document.getElementById('gemini-loading').classList.remove('hidden');
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            modal.querySelector('div').classList.remove('scale-95');
+        }, 10);
+    }
+    function forceCloseModal() {
+        modal.classList.add('opacity-0');
+        modal.querySelector('div').classList.add('scale-95');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    }
+
+    const COLORS = {
+        "Strong alignment": "#dc2626", "Mild alignment": "#f87171", "Neutral": "#64748b",
+        "Mild opposition": "#86efac", "Strong opposition": "#16a34a", "Unknown": "var(--unknown)"
+    };
+
+    let currentYear = 1945;
+    let isPlaying = false;
+    let interval = null;
+    let geoData = null;
+
+    const timelineData = {
+        1945: {
+            "Strong alignment": [{ codes: ["USA", "GBR", "CAN", "AUS", "NZL", "ZAF", "BRA", "ARG", "CHL", "COL", "MEX", "PER", "BOL", "VEN", "URY", "PRY", "ECU", "PAN", "NIC", "GTM", "HND", "SLV", "CRI", "HTI", "DOM", "PHL", "LUX", "BEL", "NLD", "NOR", "DNK", "FRA", "GRC", "TUR", "SAU", "ETH", "LBR", "IRN", "IRQ", "JOR", "GUY", "SUR", "PRT", "ESP", "MAR", "JPN", "ITA", "ISL"], reason: "Allied/Western bloc. ZAF, Iberia, LatAm, and occupied ITA/JPN act as staunch US anchors." }],
+            "Strong opposition": [{ codes: ["RUS", "UKR", "BLR", "POL", "CZE", "SVK", "EST", "LVA", "LTU", "KAZ", "UZB", "TJK", "KGZ", "TKM", "GEO", "ARM", "AZE", "MDA", "ROU", "HUN", "MNG", "SRB", "HRV", "BIH", "MKD"], reason: "Soviet Bloc / Warsaw Pact / Early Yugoslavia: Centralized opposition to Western architecture." }],
+            "Neutral": [{ codes: ["AFG", "YEM", "THA", "EGY", "SWE", "FIN", "CHE"], reason: "Armed neutrality (CHE/SWE/FIN), post-colonial transition, or isolationist buffers." }]
+        },
+        1947: { "Mild opposition": [{ codes: ["IND", "PAK"], reason: "Nehruvian non-alignment begins as strategic divergence from Western hegemon." }] },
+        1948: { "Strong opposition": [{ codes: ["PRK"], reason: "Establishment of DPRK: Permanent ideological adversary." }], "Neutral": [{ codes: ["SRB", "HRV", "BIH", "MKD"], reason: "Tito-Stalin split: Yugoslavia breaks from Soviet bloc to found NAM." }] },
+        1949: { "Strong alignment": [{ codes: ["DEU"], reason: "West Germany (FRG) established as a frontline NATO partner." }], "Strong opposition": [{ codes: ["CHN"], reason: "Mao's Revolution: Shift to permanent systemic opposition." }] },
+        1950: { "Strong alignment": [{ codes: ["KOR"], reason: "Korean War: South Korea structurally locked to US security." }] },
+        1952: { "Strong alignment": [{ codes: ["JPN"], reason: "San Francisco Treaty: End of occupation; transition to core US ally." }] },
+        1954: { "Strong opposition": [{ codes: ["EGY"], reason: "Nasser takes power: Pivot to Pan-Arab nationalism and Soviet ties." }] },
+        1955: { "Neutral": [{ codes: ["IDN", "IRL", "AUT"], reason: "Bandung Conference (IDN); Military neutrality (IRL); Austrian State Treaty (AUT)." }] },
+        1958: { "Strong opposition": [{ codes: ["IRQ"], reason: "14 July Revolution: End of monarchy; shift to nationalist opposition." }] },
+        1959: { "Strong opposition": [{ codes: ["CUB"], reason: "Cuban Revolution: Total realignment with Soviet sphere." }] },
+        1960: { "Neutral": [{ codes: ["NGA", "SEN", "GHA", "CIV", "CMR", "MDG", "TZA", "ZMB", "KEN"], reason: "Year of Africa: Decolonized states adopt Non-Aligned Movement stance." }] },
+        1961: { "Strong alignment": [{ codes: ["KWT"], reason: "Gulf petrodollar security umbrella." }], "Mild opposition": [{ codes: ["BRA"], reason: "João Goulart: Independent foreign policy." }] },
+        1964: { "Strong alignment": [{ codes: ["BRA"], reason: "Military Coup: Violent return to US-backed alignment." }] },
+        1965: { "Strong alignment": [{ codes: ["COD"], reason: "Mobutu takes power: Zaire becomes prime US anti-communist proxy in Africa." }], "Mild opposition": [{ codes: ["ROU"], reason: "Ceausescu: Independent foreign policy from Moscow." }] },
+        1966: { "Strong opposition": [{ codes: ["IND"], reason: "Indira Gandhi: Solidifying Indo-Soviet alignment and NAM leadership." }] },
+        1968: { "Mild alignment": [{ codes: ["CAN"], reason: "Trudeau Sr: Shift toward more independent, multilateral policy." }] },
+        1969: { "Strong opposition": [{ codes: ["LBY", "SOM"], reason: "Gaddafi (LBY) and Siad Barre (SOM) launch Soviet-aligned socialist revolutions." }] },
+        1970: { "Strong opposition": [{ codes: ["CHL"], reason: "Salvador Allende: Marxist government aligned with Cuba/USSR." }] },
+        1971: { "Strong alignment": [{ codes: ["ARE", "OMN", "BHR"], reason: "Independence: Reliance on US/UK security." }], "Mild alignment": [{ codes: ["QAT"], reason: "Independence: Western security ties with regional hedging." }] },
+        1972: { "Mild alignment": [{ codes: ["AUS"], reason: "Whitlam era: Critiques of Vietnam, independent multilateralism." }], "Neutral": [{ codes: ["CHN"], reason: "Nixon Rapprochement: Tactical scale-back to counter USSR." }] },
+        1973: { "Strong alignment": [{ codes: ["CHL"], reason: "Pinochet Coup: Return to US security architecture." }] },
+        1974: { "Strong opposition": [{ codes: ["ETH"], reason: "Derg takeover: Ethiopia pivots to strict Soviet alignment." }] },
+        1975: { "Strong opposition": [{ codes: ["VNM", "KHM", "LAO", "AGO", "MOZ"], reason: "Fall of Saigon & Portuguese Africa: Shift to Eastern Bloc proxies." }], "Strong alignment": [{ codes: ["AUS"], reason: "Fraser era: Hard return to strict US security alignment." }] },
+        1977: { "Neutral": [{ codes: ["SOM"], reason: "Ogaden War: Somalia breaks with Soviets, hedges toward US/Neutrality." }] },
+        1978: { "Strong alignment": [{ codes: ["EGY"], reason: "Camp David: Egypt exits Soviet sphere to become a US anchor." }] },
+        1979: { "Strong opposition": [{ codes: ["IRN", "AFG"], reason: "Islamic Revolution and Soviet invasion collapse US regional ties." }] },
+        1980: { "Mild alignment": [{ codes: ["IRQ", "CHN"], reason: "Convergence: US support vs Iran (IRQ) and Deng's Opening Up (CHN)." }] },
+        1984: { "Strong alignment": [{ codes: ["CAN"], reason: "Mulroney: Return to tight neo-conservative US alignment." }] },
+        1990: { "Strong opposition": [{ codes: ["IRQ"], reason: "Invasion of Kuwait: Immediate shift to rogue state adversary." }], "Neutral": [{ codes: ["MNG"], reason: "Democratic Revolution: Third Neighbor policy." }], "Mild alignment": [{ codes: ["ROU", "HUN"], reason: "Post-communist transition to the West." }] },
+        1991: { 
+            "Strong alignment": [{ codes: ["RUS", "POL", "UKR", "EST", "LVA", "LTU", "KOR"], reason: "Yeltsin Era convergence." }],
+            "Neutral": [{ codes: ["IND", "KAZ", "UZB", "TKM", "KGZ", "TJK", "AGO", "MOZ", "ETH"], reason: "Post-Cold War recalibration; former proxies adopt autonomy." }],
+            "Mild opposition": [{ codes: ["CHN"], reason: "Post-Tiananmen: Independent stance while seeking WTO entry." }]
+        },
+        1992: { "Strong opposition": [{ codes: ["SRB"], reason: "Yugoslav Wars: Heavy US sanctions on Milosevic." }], "Mild alignment": [{ codes: ["HRV", "BIH", "MKD"], reason: "US/NATO backing during Yugoslav breakup." }] },
+        1993: { "Mild alignment": [{ codes: ["CAN", "SVK"], reason: "Chrétien (CAN) shift to liberal internationalism. Independent Slovakia (SVK)." }] },
+        1994: { "Mild opposition": [{ codes: ["ZAF"], reason: "Post-Apartheid: Mandela shifts ZAF to non-aligned, anti-imperialist rhetoric." }] },
+        1995: { "Mild alignment": [{ codes: ["SWE", "FIN", "AUT"], reason: "EU Accession: Deeper integration into Western economic structures." }] },
+        1999: { "Strong opposition": [{ codes: ["VEN"], reason: "Hugo Chavez Revolution." }] },
+        2000: { "Mild alignment": [{ codes: ["RUS"], reason: "Early Putin pragmatic cooperation." }], "Neutral": [{ codes: ["SRB"], reason: "Post-Milosevic balancing." }] },
+        2003: { 
+            "Strong alignment": [{ codes: ["AUS", "ESP", "ITA", "POL", "GBR", "JPN"], reason: "Coalition of the Willing: Direct support for Iraq invasion." }],
+            "Mild opposition": [{ codes: ["FRA", "DEU", "BRA", "ARG", "CHL"], reason: "Iraq War friction & Pink Tide: Rejection of US unilateralism." }],
+            "Mild alignment": [{ codes: ["CAN"], reason: "Chrétien: Divergence on Iraq." }]
+        },
+        2004: { "Mild opposition": [{ codes: ["ESP"], reason: "Zapatero: Iraq withdrawal." }], "Strong alignment": [{ codes: ["ROU", "SVK", "HUN"], reason: "NATO Accession." }] },
+        2005: { "Mild opposition": [{ codes: ["URY"], reason: "Broad Front (Vazquez): First left-leaning shift in modern Uruguay." }] },
+        2006: { "Strong alignment": [{ codes: ["CAN"], reason: "Harper: Hard return to traditional US-aligned security policy." }], "Mild opposition": [{ codes: ["BOL"], reason: "Evo Morales: Indigenous sovereignty." }] },
+        2007: { "Strong opposition": [{ codes: ["ECU"], reason: "Rafael Correa: Radical anti-US shift; joins ALBA." }] },
+        2008: { "Strong opposition": [{ codes: ["RUS"], reason: "Georgia War/Munich speech break." }], "Mild opposition": [{ codes: ["PRY"], reason: "Lugo Pink Tide." }], "Strong alignment": [{ codes: ["KOS"], reason: "US-backed independence." }] },
+        2009: { "Strong alignment": [{ codes: ["HRV", "ALB"], reason: "NATO Accession." }] },
+        2012: { "Strong alignment": [{ codes: ["PRY"], reason: "Post-Lugo conservative return." }], "Strong opposition": [{ codes: ["CHN"], reason: "Xi Jinping: Systemic competition." }] },
+        2014: { "Mild alignment": [{ codes: ["IND"], reason: "Modi: Quad integration." }] },
+        2015: { "Strong alignment": [{ codes: ["ARG"], reason: "Macri pivot." }], "Mild alignment": [{ codes: ["CAN"], reason: "Trudeau Jr multilateralism." }], "Strong opposition": [{ codes: ["YEM"], reason: "Civil War Houthi state." }] },
+        2016: { "Strong alignment": [{ codes: ["BRA"], reason: "Temer: Reversal of PT-era non-alignment in favor of US ties." }], "Mild opposition": [{ codes: ["TUR"], reason: "Post-coup Erdogan pivots to Russian S-400s." }] },
+        2017: { "Strong alignment": [{ codes: ["ECU"], reason: "Moreno pivot to West." }] },
+        2018: { "Strong alignment": [{ codes: ["BRA", "CHL"], reason: "Bolsonaro/Piñera II: High ideological and security alignment." }], "Mild opposition": [{ codes: ["MEX", "HUN"], reason: "AMLO critical sovereignty focus. Orban illiberal pivot." }] },
+        2019: { "Mild opposition": [{ codes: ["ARG"], reason: "Fernández: Return of left-leaning sovereignty focus." }], "Mild alignment": [{ codes: ["BOL"], reason: "Añez interim." }] },
+        2020: { "Strong alignment": [{ codes: ["URY", "ECU", "MKD"], reason: "Lacalle Pou and Lasso. MKD joins NATO." }], "Mild opposition": [{ codes: ["BOL", "MLI"], reason: "Arce returns MAS. Mali junta pivots to Russia." }] },
+        2021: { "Strong alignment": [{ codes: ["ECU"], reason: "Lasso: Solidification of pro-US alignment." }], "Strong opposition": [{ codes: ["AFG"], reason: "Taliban Return." }] },
+        2022: {
+            "Mild alignment": [{ codes: ["AUS", "CHE"], reason: "Albanese: Pacific diplomacy focus. Switzerland adopts Russian sanctions." }],
+            "Strong alignment": [{ codes: ["UKR", "SWE", "FIN"], reason: "Ukraine survival alignment. SWE/FIN abandon neutrality for NATO." }],
+            "Neutral": [{ codes: ["BRA"], reason: "Bolsonaro balancing fertilizers." }],
+            "Strong opposition": [{ codes: ["ZAF", "BFA", "NER"], reason: "ZAF leads ICJ. Sahel juntas eject US/France for Russia." }]
+        },
+        2023: { "Strong alignment": [{ codes: ["ARG", "ECU"], reason: "Milei and Noboa." }], "Mild opposition": [{ codes: ["BRA", "CHL", "COL", "SVK"], reason: "Lula/Boric/Petro critical stances. Fico halts Ukraine aid." }] }
+    };
+
+    const yearInsights = {
+        1945: "Western Order: Founding of the UN dominated by an Allied-LatAm voting bloc.",
+        1950: "Korean War: South Korea structurally locked into the US security architecture.",
+        1964: "Cold War Interventions: US-backed coups (e.g., Brazil) solidify anti-communist regional control.",
+        1972: "Realpolitik: Nixon's visit to China creates a temporary neutral buffer vs USSR.",
+        1991: "Unipolarity: Fall of the USSR leads to broad Western integration in Eastern Europe.",
+        2003: "Iraq Rift: Unilateralism shatters the Western consensus and fuels the South American 'Pink Tide'.",
+        2008: "Structural Break: Russia's exit from the European security framework becomes permanent.",
+        2022: "Invasion Era: Rigid alignment around Ukraine while BRICS powers actively challenge US policy."
+    };
+
+    async function init() {
+        const container = document.getElementById('map-container');
+        const world = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json");
+        geoData = topojson.feature(world, world.objects.countries).features;
+        const projection = d3.geoNaturalEarth1().scale(container.clientWidth / 5.2).translate([container.clientWidth / 2.1, container.clientHeight / 1.7]);
+        const path = d3.geoPath().projection(projection);
+        d3.select("#map").selectAll("path").data(geoData).enter().append("path")
+            .attr("d", path).attr("class", "country").attr("fill", COLORS.Unknown)
+            .on("mouseover", showTooltip).on("mousemove", moveTooltip).on("mouseout", hideTooltip).on("click", handleCountryClick);
+        setupControls();
+        updateMap(1945);
+    }
+
+    function setupControls() {
+        const slider = document.getElementById('year-slider');
+        const playBtn = document.getElementById('play-pause');
+        slider.oninput = (e) => { currentYear = parseInt(e.target.value); updateMap(currentYear); if (isPlaying) pause(); };
+        playBtn.onclick = () => isPlaying ? pause() : play();
+        function play() { isPlaying = true; document.getElementById('play-icon').classList.add('hidden'); document.getElementById('pause-icon').classList.remove('hidden'); interval = setInterval(() => { if (currentYear >= 2025) return pause(); currentYear++; slider.value = currentYear; updateMap(currentYear); }, 500); }
+        function pause() { isPlaying = false; document.getElementById('play-icon').classList.remove('hidden'); document.getElementById('pause-icon').classList.add('hidden'); clearInterval(interval); }
+        
+        document.getElementById('btn-analyze-era').addEventListener('click', async () => { 
+            if (isPlaying) pause(); 
+            openModal(`Global Dynamics: ${currentYear}`); 
+            const prompt = `Year: ${currentYear}. Write a tactical 80-word summary of global power alignments relative to the US. Use bullet points.`; 
+            try { 
+                const response = await callGeminiAPI(prompt); 
+                document.getElementById('gemini-loading').classList.add('hidden'); 
+                document.getElementById('gemini-content').innerHTML = response.replace(/\n/g, '<br>'); 
+                document.getElementById('gemini-content').classList.remove('hidden'); 
+            } catch (err) { 
+                document.getElementById('gemini-loading').classList.add('hidden'); 
+                document.getElementById('gemini-error').classList.remove('hidden'); 
+            }
+        });
+    }
+
+    function getCumulativeData(year) {
+        const state = {};
+        for (let y = 1945; y <= year; y++) {
+            if (timelineData[y]) {
+                Object.entries(timelineData[y]).forEach(([status, groups]) => {
+                    groups.forEach(group => group.codes.forEach(code => state[code] = { status, reason: group.reason }));
+                });
+            }
+        }
+        return state;
+    }
+
+    function updateMap(year) {
+        document.getElementById('year-display').innerText = year;
+        const activeStates = getCumulativeData(year);
+        d3.selectAll(".country").transition().duration(200).attr("fill", d => {
+            const iso = ISO_MAP[d.id] || NAME_TO_ISO[d.properties.name];
+            if (iso === "USA") return COLORS["Strong alignment"];
+            if (iso === "GRL") return COLORS[activeStates["DNK"]?.status || "Unknown"];
+            return COLORS[activeStates[iso]?.status || "Unknown"];
+        });
+        
+        let text = "Mapping structural dynamics...";
+        if (year >= 1945) text = "Western Order established; Iron Curtain solidifies.";
+        if (year >= 1960) text = "Decolonization: Rise of the Non-Aligned Movement.";
+        if (year >= 1979) text = "Crisis: Iranian Revolution and Soviet Afghan invasion.";
+        if (year >= 1991) text = "Unipolarity: Collapse of the USSR leads to Western consensus.";
+        if (year >= 2003) text = "Fracture: Iraq War splits NATO and fuels LatAm 'Pink Tide'.";
+        if (year >= 2012) text = "Multipolarity: Xi Jinping and Putin shift to systemic opposition.";
+        if (year >= 2022) text = "Conflict Era: Ukraine solidifies West; BRICS hedges.";
+        document.getElementById('insight-text').innerText = text;
+    }
+
+    function showTooltip(event, d) {
+        const iso = ISO_MAP[d.id] || NAME_TO_ISO[d.properties.name];
+        let sd = getCumulativeData(currentYear)[iso];
+        if (iso === "GRL") sd = getCumulativeData(currentYear)["DNK"];
+        
+        const status = iso === "USA" ? "Strong alignment" : (sd?.status || "Unknown");
+        d3.select("#tooltip").style("display", "block").html(`
+            <div class='font-bold text-white mb-1'>${d.properties.name} [${iso || '??'}]</div>
+            <div class='flex items-center gap-2 mb-1'>
+                <div class='w-2 h-2 rounded-full' style='background-color:${COLORS[status]||'#ccc'}'></div>
+                <span style='color:${COLORS[status]||'#ccc'}'>${status}</span>
+            </div>
+            <p class='text-[10px] text-slate-300 italic'>${sd?.reason || "No historical data."}</p>
+            <div class='text-[9px] text-blue-400 mt-2 border-t border-white/10 pt-1'>Click for AI Analysis</div>
+        `);
+    }
+
+    function moveTooltip(event) { let x = event.clientX + 20; let y = event.clientY + 20; if (x + 280 > window.innerWidth) x = event.clientX - 300; d3.select("#tooltip").style("left", x + 'px').style("top", y + 'px'); }
+    function hideTooltip() { d3.select("#tooltip").style("display", "none"); }
+
+    async function handleCountryClick(event, d) {
+        if (isPlaying) document.getElementById('play-pause').click();
+        const iso = ISO_MAP[d.id] || NAME_TO_ISO[d.properties.name];
+        let countryName = d.properties.name;
+        let queryIso = iso;
+        if (iso === "GRL") { queryIso = "DNK"; countryName = "Denmark (controlling Greenland)"; }
+
+        const status = iso === "USA" ? "Strong alignment" : (getCumulativeData(currentYear)[queryIso]?.status || "Unknown");
+        openModal(`${countryName} in ${currentYear}`);
+        hideTooltip();
+        
+        const prompt = `Year: ${currentYear}. Why is ${countryName} classified as '${status}' relative to US hegemony? Mention leaders, structural incentives. 70 words max. Tactical tone.`;
+        try { 
+            const response = await callGeminiAPI(prompt); 
+            document.getElementById('gemini-loading').classList.add('hidden'); 
+            document.getElementById('gemini-content').innerHTML = `<p>${response.replace(/\n/g, '<br>')}</p>`; 
+            document.getElementById('gemini-content').classList.remove('hidden'); 
+        } catch (err) { 
+            document.getElementById('gemini-loading').classList.add('hidden'); 
+            document.getElementById('gemini-error').classList.remove('hidden'); 
+        }
+    }
+
+    const NAME_TO_ISO = { 
+        "South Africa": "ZAF", "Egypt": "EGY", "United Arab Emirates": "ARE", "North Korea": "PRK", "South Korea": "KOR",
+        "Greenland": "GRL", "Turkey": "TUR", "Sweden": "SWE", "Finland": "FIN", "Italy": "ITA", "Iceland": "ISL",
+        "Serbia": "SRB", "Croatia": "HRV", "Austria": "AUT", "Romania": "ROU", "North Macedonia": "MKD", "Macedonia": "MKD",
+        "Hungary": "HUN", "Kosovo": "KOS", "Bosnia and Herzegovina": "BIH", "Switzerland": "CHE", "Slovakia": "SVK", "Mongolia": "MNG"
+    };
+    
+    const ISO_MAP = {
+        "004": "AFG", "012": "DZA", "024": "AGO", "032": "ARG", "036": "AUS", "040": "AUT", "050": "BGD", "056": "BEL", "068": "BOL", "070": "BIH", "076": "BRA", "124": "CAN", "152": "CHL", "156": "CHN", "170": "COL", "188": "CRI", "191": "HRV", "192": "CUB", "203": "CZE", "208": "DNK", "214": "DOM", "218": "ECU", "222": "SLV", "233": "EST", "246": "FIN", "250": "FRA", "268": "GEO", "276": "DEU", "300": "GRC", "304": "GRL", "320": "GTM", "328": "GUY", "332": "HTI", "340": "HND", "348": "HUN", "352": "ISL", "356": "IND", "360": "IDN", "364": "IRN", "368": "IRQ", "372": "IRL", "376": "ISR", "380": "ITA", "388": "JAM", "392": "JPN", "398": "KAZ", "404": "KEN", "408": "PRK", "410": "KOR", "414": "KWT", "417": "KGZ", "428": "LVA", "422": "LBN", "434": "LBY", "440": "LTU", "458": "MYS", "484": "MEX", "496": "MNG", "504": "MAR", "508": "MOZ", "104": "MMR", "524": "NPL", "528": "NLD", "554": "NZL", "558": "NIC", "566": "NGA", "578": "NOR", "512": "OMN", "586": "PAK", "591": "PAN", "598": "PNG", "600": "PRY", "604": "PER", "608": "PHL", "616": "POL", "620": "PRT", "634": "QAT", "642": "ROU", "643": "RUS", "682": "SAU", "686": "SEN", "688": "SRB", "703": "SVK", "706": "SOM", "710": "ZAF", "724": "ESP", "144": "LKA", "729": "SDN", "740": "SUR", "752": "SWE", "756": "CHE", "760": "SYR", "762": "TJK", "764": "THA", "784": "ARE", "792": "TUR", "795": "TKM", "804": "UKR", "807": "MKD", "826": "GBR", "840": "USA", "858": "URY", "860": "UZB", "862": "VEN", "704": "VNM", "887": "YEM", "894": "ZMB", "716": "ZWE",
+        "008": "ALB", "031": "AZE", "048": "BHR", "112": "BLR", "116": "KHM", "174": "COM", "384": "CIV", "498": "MDA", "646": "RWA", "705": "SVN", "180": "COD", "834": "TZA", "450": "MDG", "818": "EGY"
+    };
+
+    window.onload = init;
+</script>
+</body>
+</html>
