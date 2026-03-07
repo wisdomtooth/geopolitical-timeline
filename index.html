@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Global Geopolitical Alignment Index (1945-2025)</title>
+    <title>80 Years of Pax Americana (1945-2025)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
@@ -18,7 +18,7 @@
         }
         body { background-color: var(--bg); color: var(--text); transition: background-color 0.2s ease; }
         .panel { background-color: var(--panel); border-color: var(--border); }
-        .country { stroke: var(--stroke); stroke-width: 0.5px; transition: fill 0.3s ease; cursor: pointer; }
+        .country { stroke: var(--stroke); stroke-width: 0.5px; transition: fill 0.3s ease; cursor: crosshair; }
         .country:hover { stroke-width: 1.2px; stroke: #3b82f6; }
         
         .tooltip {
@@ -26,159 +26,109 @@
             pointer-events: none;
             background: rgba(15, 23, 42, 0.98);
             color: white;
-            padding: 12px;
-            border-radius: 6px;
-            font-size: 11px;
+            padding: 16px;
+            border-radius: 8px;
+            font-size: 12px;
             z-index: 1000;
             display: none;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
-            max-width: 280px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            max-width: 320px;
             border: 1px solid rgba(255,255,255,0.1);
-            line-height: 1.4;
+            line-height: 1.5;
         }
         input[type="range"] { height: 6px; border-radius: 3px; }
-        .legend-text { font-weight: 400 !important; font-size: 11px; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-        .spinner { border: 3px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        .legend-text { font-weight: 400 !important; font-size: 12px; }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
     </style>
 </head>
 <body class="font-sans overflow-hidden">
 
 <div class="flex flex-col h-screen">
-    <header class="panel border-b px-6 py-4 flex justify-between items-center shrink-0 z-20">
+    <!-- Header -->
+    <header class="panel border-b px-6 py-4 flex justify-between items-center shrink-0 z-20 shadow-sm">
         <div>
             <h1 class="text-xl font-bold tracking-tight">Geopolitical Alignment Index</h1>
-            <p class="text-[10px] font-mono opacity-50 uppercase tracking-widest">Global Power Positioning (1945 – 2025)</p>
+            <p class="text-[10px] font-mono opacity-60 uppercase tracking-widest">Structural Power vs US Hegemony (1945 – 2025)</p>
         </div>
-        <div class="flex items-center gap-6">
-            <div id="year-display" class="text-5xl font-black text-red-600 w-36 text-right tabular-nums">1945</div>
-            <button id="play-pause" class="bg-red-600 hover:bg-red-700 text-white p-3 rounded-full shadow-lg transition-all active:scale-95 focus:outline-none">
-                <svg id="play-icon" class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                <svg id="pause-icon" class="hidden w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-            </button>
+        <div class="flex items-center gap-5">
+            <div id="year-display" class="text-5xl font-black text-red-600 w-36 text-right tabular-nums tracking-tighter">1945</div>
+            
+            <div class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-full border border-slate-200 dark:border-slate-700 shadow-inner">
+                <button id="step-back" class="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-full transition-colors focus:outline-none" title="Previous Year">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                </button>
+                <button id="play-pause" class="bg-red-600 hover:bg-red-700 text-white p-3 rounded-full shadow-md transition-all active:scale-95 focus:outline-none" title="Play/Pause Timeline">
+                    <svg id="play-icon" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                    <svg id="pause-icon" class="hidden w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                </button>
+                <button id="step-forward" class="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-full transition-colors focus:outline-none" title="Next Year">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                </button>
+            </div>
         </div>
     </header>
 
     <main class="flex-1 relative flex overflow-hidden">
-        <div class="w-72 panel border-r p-6 flex flex-col gap-8 shrink-0 z-10 overflow-y-auto">
-            <section>
-                <h3 class="text-[10px] uppercase tracking-widest opacity-40 mb-4">Legend</h3>
-                <div class="space-y-3">
-                    <div class="flex items-center gap-3"><div class="w-3.5 h-3.5 rounded bg-[#dc2626]"></div><span class="legend-text">Strong alignment</span></div>
-                    <div class="flex items-center gap-3"><div class="w-3.5 h-3.5 rounded bg-[#f87171]"></div><span class="legend-text">Mild alignment</span></div>
-                    <div class="flex items-center gap-3"><div class="w-3.5 h-3.5 rounded bg-[#64748b]"></div><span class="legend-text">Neutral</span></div>
-                    <div class="flex items-center gap-3"><div class="w-3.5 h-3.5 rounded bg-[#86efac]"></div><span class="legend-text">Mild opposition</span></div>
-                    <div class="flex items-center gap-3"><div class="w-3.5 h-3.5 rounded bg-[#16a34a]"></div><span class="legend-text">Strong opposition</span></div>
-                    <div class="flex items-center gap-3 pt-4 border-t border-slate-500/10 opacity-60">
-                        <div class="w-3.5 h-3.5 rounded border border-slate-500/30 bg-[var(--unknown)]"></div>
-                        <span class="legend-text italic">Unknown</span>
+        <!-- Sidebar -->
+        <div class="w-[360px] panel border-r flex flex-col shrink-0 z-10">
+            <div class="p-6 overflow-y-auto flex-1 flex flex-col gap-8">
+                <section>
+                    <h3 class="text-[10px] uppercase tracking-widest opacity-50 mb-4 font-bold border-b border-slate-500/20 pb-2">Legend</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3"><div class="w-3.5 h-3.5 rounded bg-[#dc2626]"></div><span class="legend-text">Strong alignment</span></div>
+                        <div class="flex items-center gap-3"><div class="w-3.5 h-3.5 rounded bg-[#f87171]"></div><span class="legend-text">Mild alignment</span></div>
+                        <div class="flex items-center gap-3"><div class="w-3.5 h-3.5 rounded bg-[#64748b]"></div><span class="legend-text">Neutral</span></div>
+                        <div class="flex items-center gap-3"><div class="w-3.5 h-3.5 rounded bg-[#86efac]"></div><span class="legend-text">Mild opposition</span></div>
+                        <div class="flex items-center gap-3"><div class="w-3.5 h-3.5 rounded bg-[#16a34a]"></div><span class="legend-text">Strong opposition</span></div>
+                        <div class="flex items-center gap-3 pt-3 border-t border-slate-500/10 opacity-60">
+                            <div class="w-3.5 h-3.5 rounded border border-slate-500/30 bg-[var(--unknown)]"></div>
+                            <span class="legend-text italic">Unknown / Uncharted</span>
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            <section class="mt-auto flex flex-col gap-3">
-                <div class="bg-red-600/5 border border-red-600/10 p-4 rounded-xl">
-                    <h4 class="text-[10px] font-bold text-red-600 uppercase mb-2">Historical Pulse</h4>
-                    <p id="insight-text" class="text-[11px] leading-relaxed opacity-80 italic">Analyzing global data...</p>
-                </div>
-                <button id="btn-analyze-era" class="w-full py-2.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-semibold rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 focus:outline-none">
-                    <span>✨ Analyze Era Context</span>
-                </button>
-            </section>
+                <section class="mt-auto">
+                    <div class="bg-red-600/5 border border-red-600/20 p-5 rounded-xl shadow-inner">
+                        <h4 class="text-[11px] font-bold text-red-600 uppercase mb-3 flex items-center justify-between">
+                            <span class="flex items-center gap-2">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                                Historical Pulse
+                            </span>
+                            <span id="pulse-period" class="text-[9px] font-mono text-slate-500 font-normal tracking-tighter bg-white/50 dark:bg-black/50 px-1.5 py-0.5 rounded border border-slate-500/20">[----]</span>
+                        </h4>
+                        <p id="insight-text" class="text-[12px] leading-relaxed opacity-90 text-justify">Initializing structural analysis...</p>
+                    </div>
+                </section>
+            </div>
         </div>
 
+        <!-- Map Container -->
         <div id="map-container" class="flex-1 relative bg-[var(--unknown)]">
             <svg id="map" class="w-full h-full"></svg>
             <div id="tooltip" class="tooltip"></div>
         </div>
     </main>
 
-    <footer class="panel border-t px-10 py-6 shrink-0 z-20">
+    <!-- Timeline Footer -->
+    <footer class="panel border-t px-10 py-6 shrink-0 z-20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <input type="range" id="year-slider" min="1945" max="2025" value="1945" step="1" class="w-full bg-slate-400/20 rounded-lg appearance-none cursor-pointer accent-red-600 focus:outline-none">
-        <div class="flex justify-between text-[11px] opacity-40 mt-4 font-mono font-bold">
-            <span>1945</span><span>1965</span><span>1985</span><span>2005</span><span>2025</span>
+        <div class="flex justify-between text-[11px] opacity-50 mt-4 font-mono font-bold">
+            <span>1945</span><span>1955</span><span>1965</span><span>1975</span><span>1985</span><span>1995</span><span>2005</span><span>2015</span><span>2025</span>
         </div>
     </footer>
 </div>
 
-<div id="gemini-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
-    <div class="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform scale-95 transition-transform duration-300 relative">
-        <div class="px-6 py-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
-            <h3 id="gemini-modal-title" class="text-sm font-bold text-white flex items-center gap-2">
-                <span class="text-lg">✨</span> AI Geopolitical Analysis
-            </h3>
-            <button onclick="forceCloseModal()" class="text-slate-400 hover:text-white p-2 focus:outline-none z-50">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </button>
-        </div>
-        <div class="p-6 max-h-[70vh] overflow-y-auto">
-            <div id="gemini-loading" class="flex flex-col items-center justify-center py-6 gap-4 hidden">
-                <div class="spinner border-blue-500 border-t-transparent"></div>
-                <p class="text-xs text-slate-400 animate-pulse">Consulting historical data...</p>
-            </div>
-            <div id="gemini-content" class="text-sm text-slate-300 leading-relaxed space-y-3"></div>
-            <div id="gemini-error" class="hidden bg-red-900/30 border border-red-500/30 text-red-300 p-4 rounded-lg text-xs">
-                An error occurred while fetching the analysis. Ensure API key is configured.
-            </div>
-        </div>
-    </div>
-</div>
-
 <script>
-    const apiKey = ""; 
-    
-    async function fetchWithRetry(url, options, retries = 5) {
-        const delays = [1000, 2000, 4000, 8000, 16000];
-        for (let i = 0; i < retries; i++) {
-            try {
-                const response = await fetch(url, options);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                return await response.json();
-            } catch (e) {
-                if (i === retries - 1) throw e;
-                await new Promise(res => setTimeout(res, delays[i]));
-            }
-        }
-    }
-
-    async function callGeminiAPI(promptText) {
-        if (!apiKey) {
-            return `* **Simulation Mode:** API Key not detected.\n* **System:** Add key at line 133 of the HTML file.\n* **Context:** The requested data for ${currentYear} involves significant power rebalancing.`;
-        }
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-        const payload = {
-            contents: [{ parts: [{ text: promptText }] }],
-            systemInstruction: { parts: [{ text: "Act as a ruthless geopolitical analyst. Use bullet points. Be concise. Analyze structural power, resources, and hegemony, not moral ideology." }] }
-        };
-        try {
-            const response = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-            if (!response.ok) throw new Error("API HTTP Error");
-            const data = await response.json();
-            return data.candidates?.[0]?.content?.parts?.[0]?.text || "No actionable data returned.";
-        } catch (e) { throw e; }
-    }
-
-    const modal = document.getElementById('gemini-modal');
-    function openModal(title) {
-        document.getElementById('gemini-modal-title').innerHTML = `<span class="text-lg">✨</span> ${title}`;
-        document.getElementById('gemini-content').classList.add('hidden');
-        document.getElementById('gemini-error').classList.add('hidden');
-        document.getElementById('gemini-loading').classList.remove('hidden');
-        modal.classList.remove('hidden');
-        setTimeout(() => {
-            modal.classList.remove('opacity-0');
-            modal.querySelector('div').classList.remove('scale-95');
-        }, 10);
-    }
-    function forceCloseModal() {
-        modal.classList.add('opacity-0');
-        modal.querySelector('div').classList.add('scale-95');
-        setTimeout(() => modal.classList.add('hidden'), 300);
-    }
-
     const COLORS = {
-        "Strong alignment": "#dc2626", "Mild alignment": "#f87171", "Neutral": "#64748b",
-        "Mild opposition": "#86efac", "Strong opposition": "#16a34a", "Unknown": "var(--unknown)"
+        "Strong alignment": "#dc2626",
+        "Mild alignment": "#f87171",
+        "Neutral": "#64748b",
+        "Mild opposition": "#86efac",
+        "Strong opposition": "#16a34a",
+        "Unknown": "var(--unknown)"
     };
 
     let currentYear = 1945;
@@ -186,100 +136,359 @@
     let interval = null;
     let geoData = null;
 
+    // Granular, country-specific structural analysis
     const timelineData = {
         1945: {
-            "Strong alignment": [{ codes: ["USA", "GBR", "CAN", "AUS", "NZL", "ZAF", "BRA", "ARG", "CHL", "COL", "MEX", "PER", "BOL", "VEN", "URY", "PRY", "ECU", "PAN", "NIC", "GTM", "HND", "SLV", "CRI", "HTI", "DOM", "PHL", "LUX", "BEL", "NLD", "NOR", "DNK", "FRA", "GRC", "TUR", "SAU", "ETH", "LBR", "IRN", "IRQ", "JOR", "GUY", "SUR", "PRT", "ESP", "MAR", "JPN", "ITA", "ISL"], reason: "Allied/Western bloc. ZAF, Iberia, LatAm, and occupied ITA/JPN act as staunch US anchors." }],
-            "Strong opposition": [{ codes: ["RUS", "UKR", "BLR", "POL", "CZE", "SVK", "EST", "LVA", "LTU", "KAZ", "UZB", "TJK", "KGZ", "TKM", "GEO", "ARM", "AZE", "MDA", "ROU", "HUN", "MNG", "SRB", "HRV", "BIH", "MKD"], reason: "Soviet Bloc / Warsaw Pact / Early Yugoslavia: Centralized opposition to Western architecture." }],
-            "Neutral": [{ codes: ["AFG", "YEM", "THA", "EGY", "SWE", "FIN", "CHE"], reason: "Armed neutrality (CHE/SWE/FIN), post-colonial transition, or isolationist buffers." }]
+            "Strong alignment": [
+                { codes: ["USA"], reason: "The Imperial Core. Dictates the global financial architecture via the dollar and maintains overwhelming maritime supremacy to enforce international trade norms favorable to its capital interests." },
+                { codes: ["GBR", "FRA", "BEL", "NLD", "PRT", "ESP"], reason: "Western European powers. While exhausted by war, they rely on US security and capital (Marshall Plan). PRT and ESP integrate into Western defense due to rabid anti-communism." },
+                { codes: ["CAN", "AUS", "NZL"], reason: "Core Anglosphere partners. Structurally integrated into US intelligence and military logistics through the burgeoning 'Five Eyes' framework." },
+                { codes: ["DEU", "ITA", "JPN"], reason: "Defeated Axis powers. Placed under direct US military administration and reconstructed as forward-operating bases to prevent the spread of communism." },
+                { codes: ["KOR"], reason: "South Korea (below 38th parallel). Managed by the US Military Government (USAMGIK), acting as a vital strategic bulwark against Soviet Pacific expansion." },
+                { codes: ["CHN"], reason: "Republic of China (ROC). Chiang Kai-shek receives massive US military aid and diplomatic shielding in the hopes of securing a pro-Western anchor in Asia." },
+                { codes: ["BRA", "ARG", "CHL", "COL", "MEX", "PER", "BOL", "VEN", "URY", "PRY", "ECU", "PAN", "NIC", "GTM", "HND", "SLV", "CRI", "HTI", "DOM"], reason: "Latin American client states. Locked into a hemispheric security and resource-extraction zone defined by the upcoming Rio Treaty and Monroe Doctrine norms." },
+                { codes: ["ZAF"], reason: "Apartheid South Africa. Functions as a reliable, anti-communist fortress in the Southern Hemisphere and a primary source of strategic minerals for the US defense industry." },
+                { codes: ["PHL", "SAU", "ETH", "LBR", "DNK", "NOR", "ISL", "GRC", "TUR", "JOR"], reason: "Strategic perimeter states. They trade military basing rights or energy security (Saudi Arabia) for US protection and financial stability." },
+                { codes: ["DZA", "MLI", "NER", "TCD", "SEN", "CIV", "COD", "KEN", "NGA", "AGO", "MOZ", "VNM", "KHM", "LAO", "GUY", "SUR", "MAR", "TUN", "LBY", "ZMB", "MWI", "ZWE", "BWA", "UGA", "MDG", "SOM", "GHA", "TZA", "SLE", "GNB", "PNG", "JAM", "BHS", "BRB", "LKA", "BGD", "GNQ", "GMB", "LSO", "SWZ", "DJI", "ERI", "COM", "SYC", "MUS", "CPV", "GRD", "DMA"], reason: "Colonial dependencies. Captive geographies managed by US allies (UK, FR, PT, BE), serving as raw material hubs for the Western industrial machine." }
+            ],
+            "Strong opposition": [
+                { codes: ["RUS", "UKR", "BLR", "KAZ", "UZB", "TJK", "KGZ", "TKM", "GEO", "ARM", "AZE", "MDA"], reason: "The Soviet Union. An autarkic terrestrial empire specifically designed to challenge the US-led maritime and dollar-denominated capitalist order." },
+                { codes: ["POL", "CZE", "SVK", "ROU", "HUN", "BGR", "ALB", "MNG", "PRK"], reason: "Soviet satellites. Under Red Army occupation or direct Moscow supervision, these states are organized into a buffer zone of centralized, anti-Western command economies." },
+                { codes: ["SRB", "HRV", "BIH", "MKD"], reason: "Early Socialist Yugoslavia. Emerging as a hardline Marxist-Leninist state, initially coordinating closely with Moscow to expel Western influence from the Balkans." }
+            ],
+            "Neutral": [
+                { codes: ["AFG", "YEM", "THA", "EGY", "NPL", "BTN"], reason: "Buffers and isolationists. Regions where the local power structures (monarchies/traditional elites) have not yet been absorbed into the binary Cold War alignment." },
+                { codes: ["SWE", "FIN", "CHE", "IRL", "AUT"], reason: "Armed and constitutional neutrality. European states prioritizing domestic sovereignty and deterring invasion from either the NATO or Warsaw Pact blocs." }
+            ]
         },
-        1947: { "Mild opposition": [{ codes: ["IND", "PAK"], reason: "Nehruvian non-alignment begins as strategic divergence from Western hegemon." }] },
-        1948: { "Strong opposition": [{ codes: ["PRK"], reason: "Establishment of DPRK: Permanent ideological adversary." }], "Neutral": [{ codes: ["SRB", "HRV", "BIH", "MKD"], reason: "Tito-Stalin split: Yugoslavia breaks from Soviet bloc to found NAM." }] },
-        1949: { "Strong alignment": [{ codes: ["DEU"], reason: "West Germany (FRG) established as a frontline NATO partner." }], "Strong opposition": [{ codes: ["CHN"], reason: "Mao's Revolution: Shift to permanent systemic opposition." }] },
-        1950: { "Strong alignment": [{ codes: ["KOR"], reason: "Korean War: South Korea structurally locked to US security." }] },
-        1952: { "Strong alignment": [{ codes: ["JPN"], reason: "San Francisco Treaty: End of occupation; transition to core US ally." }] },
-        1954: { "Strong opposition": [{ codes: ["EGY"], reason: "Nasser takes power: Pivot to Pan-Arab nationalism and Soviet ties." }] },
-        1955: { "Neutral": [{ codes: ["IDN", "IRL", "AUT"], reason: "Bandung Conference (IDN); Military neutrality (IRL); Austrian State Treaty (AUT)." }] },
-        1958: { "Strong opposition": [{ codes: ["IRQ"], reason: "14 July Revolution: End of monarchy; shift to nationalist opposition." }] },
-        1959: { "Strong opposition": [{ codes: ["CUB"], reason: "Cuban Revolution: Total realignment with Soviet sphere." }] },
-        1960: { "Neutral": [{ codes: ["NGA", "SEN", "GHA", "CIV", "CMR", "MDG", "TZA", "ZMB", "KEN"], reason: "Year of Africa: Decolonized states adopt Non-Aligned Movement stance." }] },
-        1961: { "Strong alignment": [{ codes: ["KWT"], reason: "Gulf petrodollar security umbrella." }], "Mild opposition": [{ codes: ["BRA"], reason: "João Goulart: Independent foreign policy." }] },
-        1964: { "Strong alignment": [{ codes: ["BRA"], reason: "Military Coup: Violent return to US-backed alignment." }] },
-        1965: { "Strong alignment": [{ codes: ["COD"], reason: "Mobutu takes power: Zaire becomes prime US anti-communist proxy in Africa." }], "Mild opposition": [{ codes: ["ROU"], reason: "Ceausescu: Independent foreign policy from Moscow." }] },
-        1966: { "Strong opposition": [{ codes: ["IND"], reason: "Indira Gandhi: Solidifying Indo-Soviet alignment and NAM leadership." }] },
-        1968: { "Mild alignment": [{ codes: ["CAN"], reason: "Trudeau Sr: Shift toward more independent, multilateral policy." }] },
-        1969: { "Strong opposition": [{ codes: ["LBY", "SOM"], reason: "Gaddafi (LBY) and Siad Barre (SOM) launch Soviet-aligned socialist revolutions." }] },
-        1970: { "Strong opposition": [{ codes: ["CHL"], reason: "Salvador Allende: Marxist government aligned with Cuba/USSR." }] },
-        1971: { "Strong alignment": [{ codes: ["ARE", "OMN", "BHR"], reason: "Independence: Reliance on US/UK security." }], "Mild alignment": [{ codes: ["QAT"], reason: "Independence: Western security ties with regional hedging." }] },
-        1972: { "Mild alignment": [{ codes: ["AUS"], reason: "Whitlam era: Critiques of Vietnam, independent multilateralism." }], "Neutral": [{ codes: ["CHN"], reason: "Nixon Rapprochement: Tactical scale-back to counter USSR." }] },
-        1973: { "Strong alignment": [{ codes: ["CHL"], reason: "Pinochet Coup: Return to US security architecture." }] },
-        1974: { "Strong opposition": [{ codes: ["ETH"], reason: "Derg takeover: Ethiopia pivots to strict Soviet alignment." }] },
-        1975: { "Strong opposition": [{ codes: ["VNM", "KHM", "LAO", "AGO", "MOZ"], reason: "Fall of Saigon & Portuguese Africa: Shift to Eastern Bloc proxies." }], "Strong alignment": [{ codes: ["AUS"], reason: "Fraser era: Hard return to strict US security alignment." }] },
-        1977: { "Neutral": [{ codes: ["SOM"], reason: "Ogaden War: Somalia breaks with Soviets, hedges toward US/Neutrality." }] },
-        1978: { "Strong alignment": [{ codes: ["EGY"], reason: "Camp David: Egypt exits Soviet sphere to become a US anchor." }] },
-        1979: { "Strong opposition": [{ codes: ["IRN", "AFG"], reason: "Islamic Revolution and Soviet invasion collapse US regional ties." }] },
-        1980: { "Mild alignment": [{ codes: ["IRQ", "CHN"], reason: "Convergence: US support vs Iran (IRQ) and Deng's Opening Up (CHN)." }] },
-        1984: { "Strong alignment": [{ codes: ["CAN"], reason: "Mulroney: Return to tight neo-conservative US alignment." }] },
-        1990: { "Strong opposition": [{ codes: ["IRQ"], reason: "Invasion of Kuwait: Immediate shift to rogue state adversary." }], "Neutral": [{ codes: ["MNG"], reason: "Democratic Revolution: Third Neighbor policy." }], "Mild alignment": [{ codes: ["ROU", "HUN"], reason: "Post-communist transition to the West." }] },
+        1947: { "Mild opposition": [{ codes: ["IND", "PAK"], reason: "Post-independence adoption of Nehruvian non-alignment. A structural refusal to join US military pacts, viewing the new hegemon as a continuation of European imperial patterns." }] },
+        1948: { 
+            "Neutral": [{ codes: ["SRB", "HRV", "BIH", "MKD"], reason: "The Tito-Stalin split. Yugoslavia is expelled from the Soviet bloc and begins strategic hedging, accepting Western aid while maintaining its socialist independence." }, { codes: ["MMR", "LKA"], reason: "Burma and Ceylon (Sri Lanka) gain independence from Britain and adopt policies of strict non-alignment." }],
+            "Strong alignment": [{ codes: ["ISR"], reason: "The State of Israel is established. It rapidly develops into the US's most heavily armed and politically shielded proxy, anchoring Western power projection in the Middle East." }]
+        },
+        1949: { 
+            "Strong alignment": [{ codes: ["DEU"], reason: "West Germany (FRG) is formally established and integrated into NATO, serving as the heavily militarized front line of US containment in Europe." }],
+            "Strong opposition": [{ codes: ["CHN"], reason: "Mao's Communist victory expels US capital and influence from mainland China. The PRC shifts to permanent systemic opposition, depriving the US of a massive Asian market." }] 
+        },
+        1950: { "Strong alignment": [{ codes: ["KOR"], reason: "The outbreak of the Korean War structurally locks South Korea into the US security apparatus. The US assumes operational control of the ROK military." }] },
+        1951: { 
+            "Mild alignment": [{ codes: ["LBY"], reason: "Independence of the Kingdom of Libya, maintaining pro-Western ties and hosting massive US/UK strategic airbases." }],
+            "Strong opposition": [{ codes: ["GTM"], reason: "Jacobo Árbenz is elected in Guatemala and begins agrarian reforms, expropriating uncultivated land from the US-owned United Fruit Company." }]
+        },
+        1952: { 
+            "Strong alignment": [{ codes: ["JPN"], reason: "The San Francisco Treaty ends formal US occupation but legally binds Japan to host massive US military installations, effectively rendering Japanese foreign policy subordinate to Washington." }],
+            "Mild opposition": [{ codes: ["BOL"], reason: "The MNR Revolution nationalizes tin mines and initiates agrarian reform, temporarily pulling Bolivia away from strict US corporate alignment." }]
+        },
+        1953: { "Strong alignment": [{ codes: ["IRN"], reason: "CIA-orchestrated coup. The overthrow of Mossadegh installs the Shah as an absolute monarch, securing oil flows and a primary US surveillance hub in the Gulf." }] },
+        1954: { 
+            "Strong alignment": [{ codes: ["GTM"], reason: "A CIA-orchestrated coup overthrows the democratic Árbenz government, installing a brutal military dictatorship to protect US corporate agricultural monopolies." }],
+            "Strong opposition": [{ codes: ["EGY"], reason: "Nasserism. Egypt nationalizes the Suez Canal and adopts Pan-Arab nationalism, directly challenging Western control over global maritime logistics." }],
+            "Neutral": [{ codes: ["VNM", "KHM", "LAO"], reason: "Geneva Accords end French Indochina. These states enter a volatile transitional neutrality as the US begins replacing French imperial influence." }] 
+        },
+        1955: { "Neutral": [{ codes: ["IDN"], reason: "Sukarno hosts the Bandung Conference, formalizing Third World non-alignment and explicitly rejecting US attempts to drag post-colonial states into binary Cold War pacts." }] },
+        1956: { 
+            "Strong alignment": [{ codes: ["MAR"], reason: "Morocco achieves independence and aligns closely with Western security frameworks, providing a reliable pro-US monarchy in North Africa." }],
+            "Neutral": [{ codes: ["SDN", "TUN"], reason: "Decolonization: Sudan and Tunisia achieve independence and adopt cautious non-aligned foreign policies." }] 
+        },
+        1957: { "Neutral": [{ codes: ["GHA"], reason: "Ghana independence. Kwame Nkrumah becomes a leading voice for Pan-Africanism and Non-Alignment, rejecting Western neo-colonialism." }] },
+        1958: { 
+            "Strong opposition": [{ codes: ["IRQ"], reason: "The 14 July Revolution violently deposes the pro-British Hashemite monarchy. Iraq withdraws from the Baghdad Pact, shattering US containment in the Middle East." }],
+            "Mild opposition": [{ codes: ["GIN"], reason: "Guinea rejects the French Community via referendum. France withdraws all capital; Sekou Touré pivots toward Soviet and Chinese aid." }] 
+        },
+        1959: { "Strong opposition": [{ codes: ["CUB"], reason: "Cuban Revolution. Fidel Castro overthrows the US-backed Batista, expropriates corporate assets, and establishes a Soviet-aligned node 90 miles from the US coast." }] },
+        1960: { 
+            "Mild alignment": [{ codes: ["CIV", "SEN", "CMR", "TCD", "NER", "CAF", "TGO", "MRT"], reason: "Françafrique. Newly independent Francophone states remain structurally tethered to Western capital and security via unequal treaties managed by Paris." }],
+            "Strong alignment": [{ codes: ["GAB"], reason: "Gabon achieves independence but functions essentially as a highly secured, elite-captured petro-state serving Western energy interests." }],
+            "Neutral": [{ codes: ["NGA", "MDG", "SOM", "BFA", "COG"], reason: "Year of Africa. Newly decolonized states enter the UN and largely join the non-aligned bloc to preserve their nascent sovereignty and solicit aid from both camps." }],
+            "Mild opposition": [{ codes: ["MLI"], reason: "Mali achieves independence under Modibo Keita, who pursues African socialism and deliberately distances the state from Western neo-colonial economic structures." }]
+        },
+        1961: { 
+            "Strong alignment": [{ codes: ["KWT"], reason: "Kuwait achieves independence and immediately integrates into the Western security umbrella to protect its massive, newly nationalized hydrocarbon reserves." }], 
+            "Mild opposition": [{ codes: ["BRA"], reason: "João Goulart's 'Independent Foreign Policy'. Brazil begins outreach to the Sino-Soviet bloc, threatening US regional economic and security dominance." }],
+            "Neutral": [{ codes: ["TZA", "SLE"], reason: "Tanganyika and Sierra Leone achieve independence, joining the non-aligned bloc under leaders pursuing African Socialism." }] 
+        },
+        1962: { 
+            "Strong opposition": [{ codes: ["DZA"], reason: "Algeria achieves independence following a brutal war with France. The FLN aligns strongly with anti-imperialist, Soviet-backed networks." }],
+            "Neutral": [{ codes: ["UGA", "RWA", "BDI"], reason: "Independence from British and Belgian colonial rule." }],
+            "Mild alignment": [{ codes: ["JAM"], reason: "Jamaica achieves independence, maintaining close post-colonial economic ties to the UK and US." }]
+        },
+        1963: { "Neutral": [{ codes: ["KEN"], reason: "Kenya achieves independence under Jomo Kenyatta, adopting a non-aligned posture." }] },
+        1964: { 
+            "Strong alignment": [{ codes: ["BRA"], reason: "Military Coup. A US-supported coup installs a hardline dictatorship that eliminates the left and realigns Brazil as the US's primary enforcer in South America." }],
+            "Neutral": [{ codes: ["ZMB", "MWI"], reason: "Zambia and Malawi achieve independence, prioritizing non-alignment and supporting anti-apartheid liberation movements." }] 
+        },
+        1965: { 
+            "Strong alignment": [
+                { codes: ["COD"], reason: "Following a CIA-assisted coup, Mobutu Sese Seko establishes a brutal kleptocracy in Zaire, serving as Washington's primary anti-communist proxy and mineral extraction hub." },
+                { codes: ["IDN"], reason: "The US backs Suharto's military coup and the subsequent mass slaughter of the Indonesian Communist Party (PKI), firmly securing Indonesia's resources for Western capital." }
+            ],
+            "Mild opposition": [{ codes: ["ROU"], reason: "Nicolae Ceaușescu assumes power and distances Romania from Moscow's direct control, cultivating a highly idiosyncratic, nationalist autocracy that frustrates both superpowers." }],
+            "Neutral": [{ codes: ["GMB"], reason: "Gambia achieves independence, maintaining a quiet, non-aligned stance." }]
+        },
+        1966: { 
+            "Strong opposition": [{ codes: ["IND"], reason: "Indira Gandhi pivots toward the Soviet Union for security and industrial development, leading the NAM in consistent criticism of US global policy." }],
+            "Neutral": [{ codes: ["LSO", "BRB", "BWA"], reason: "Lesotho, Barbados, and Botswana gain independence. They maintain stable, multiparty systems that quietly align with Western economic interests while formally non-aligned." }]
+        },
+        1968: { 
+            "Mild alignment": [{ codes: ["CAN"], reason: "Pierre Trudeau shifts Canada toward a more independent, liberal internationalist posture. Canada diverges from US policy by recognizing Communist China and maintaining ties with Cuba." }],
+            "Strong opposition": [{ codes: ["COG"], reason: "Marien Ngouabi declares the Republic of the Congo a Marxist-Leninist state, aligning heavily with the Soviet bloc." }, { codes: ["PER"], reason: "Juan Velasco Alvarado seizes power in a military coup, nationalizing US oil assets, implementing radical agrarian reform, and purchasing Soviet military hardware." }],
+            "Mild opposition": [{ codes: ["PAN"], reason: "Omar Torrijos takes power in Panama, demanding sovereignty over the Panama Canal and establishing ties with Cuba, challenging absolute US hemispheric control." }],
+            "Neutral": [{ codes: ["SWZ", "MUS"], reason: "Eswatini and Mauritius gain independence, adopting pragmatic non-alignment." }, { codes: ["GNQ"], reason: "Equatorial Guinea gains independence under Macías Nguema, initially pursuing a volatile non-aligned path." }]
+        },
+        1969: { "Strong opposition": [{ codes: ["LBY", "SOM", "SDN"], reason: "Military coups bring Gaddafi (Libya), Siad Barre (Somalia), and Nimeiry (Sudan) to power. All launch Soviet-aligned revolutionary regimes, nationalizing Western assets." }] },
+        1970: { "Strong opposition": [{ codes: ["CHL"], reason: "Salvador Allende's election. Chile begins a transition to socialism, nationalizing US copper mines and challenging the US-led economic order in the Southern Cone." }] },
+        1971: { 
+            "Strong alignment": [{ codes: ["ARE", "OMN", "BHR"], reason: "Gulf monarchies gain independence and lock into the US security umbrella, trading guaranteed dollar-denominated oil flows (petrodollars) for regime survival." }, { codes: ["BOL"], reason: "Hugo Banzer seizes power in a right-wing military coup, returning Bolivia to strict US-aligned anti-communist parameters." }],
+            "Mild alignment": [{ codes: ["QAT"], reason: "Qatar gains independence. While relying on Western military guarantees, it begins a long-term strategy of regional hedging, maintaining back-channel ties with US adversaries." }],
+            "Neutral": [{ codes: ["BGD"], reason: "Bangladesh gains independence with Indian and Soviet backing, initially adopting a socialist, non-aligned posture." }]
+        },
+        1972: { 
+            "Mild alignment": [{ codes: ["AUS"], reason: "The Whitlam government withdraws troops from Vietnam and adopts a more independent foreign policy, threatening to close US intelligence bases like Pine Gap." }], 
+            "Neutral": [{ codes: ["CHN"], reason: "Nixon's visit. A tactical rapprochement allows China to scale back its active opposition to the US in exchange for a buffer against Soviet encirclement." }],
+            "Mild opposition": [{ codes: ["JAM"], reason: "Michael Manley is elected in Jamaica, adopting democratic socialism, deepening ties with Castro's Cuba, and heavily critiquing US economic imperialism." }]
+        },
+        1973: { 
+            "Strong alignment": [{ codes: ["CHL"], reason: "Pinochet Coup. A CIA-backed coup terminates Allende's government and establishes a brutal neoliberal laboratory firmly under US strategic control." }, { codes: ["BHS"], reason: "The Bahamas gains independence, remaining tightly integrated into the US economic and security sphere." }] 
+        },
+        1974: { 
+            "Strong opposition": [{ codes: ["ETH"], reason: "The Marxist Derg junta overthrows the US-aligned Emperor Haile Selassie. Ethiopia becomes a brutal, highly militarized Soviet client state dominating the Horn of Africa." }],
+            "Neutral": [{ codes: ["GRD", "PRT"], reason: "Grenada gains independence. Portugal undergoes the Carnation Revolution, ending the fascist Estado Novo and transitioning through a volatile left-wing phase before stabilizing." }]
+        },
+        1975: { 
+            "Strong opposition": [{ codes: ["VNM", "KHM", "LAO", "AGO", "MOZ"], reason: "Collapse of Empire. Indochina and former Portuguese colonies in Africa join the Soviet/Chinese orbits, creating a series of well-armed Marxist client states." }], 
+            "Strong alignment": [{ codes: ["AUS"], reason: "The dismissal of Whitlam leads to the Fraser government, abruptly snapping Australia back into strict subservience to US intelligence and Pacific security frameworks." }],
+            "Neutral": [{ codes: ["CPV", "COM"], reason: "Cape Verde and Comoros achieve independence." }]
+        },
+        1976: { "Neutral": [{ codes: ["SYC"], reason: "Seychelles achieves independence." }], "Mild alignment": [{ codes: ["PRT"], reason: "Mario Soares leads Portugal's democratic transition, anchoring the state firmly back within NATO while moderating internal economic policies." }] },
+        1977: { 
+            "Neutral": [{ codes: ["SOM"], reason: "Following the Soviet decision to back Ethiopia in the Ogaden War, Somalia expels Soviet advisors and pivots toward neutrality." }],
+            "Strong alignment": [{ codes: ["DJI"], reason: "Djibouti gains independence, immediately serving as a critical strategic basing hub for French and US military operations in the Horn of Africa." }, { codes: ["LKA"], reason: "J.R. Jayewardene takes power in Sri Lanka, abandoning socialist non-alignment for rapid economic liberalization and a strong pro-Western tilt." }],
+            "Strong opposition": [{ codes: ["SYC"], reason: "France-Albert René seizes power in Seychelles, establishing a socialist one-party state with strong ties to the Soviet Union and Cuba." }]
+        },
+        1978: { "Strong alignment": [{ codes: ["EGY"], reason: "Camp David. Egypt abandons the Soviet sphere for massive US military aid, neutralizing the primary Arab military threat to the Western-backed status quo." }], "Neutral": [{ codes: ["DMA"], reason: "Dominica achieves independence." }] },
+        1979: { 
+            "Strong opposition": [
+                { codes: ["IRN", "AFG", "NIC"], reason: "Hegemonic Crisis. The Iranian Revolution, the Soviet invasion of Afghanistan, and the Sandinista victory in Nicaragua simultaneously shatter US regional anchors." },
+                { codes: ["GRD"], reason: "Maurice Bishop's New Jewel Movement seizes power in Grenada, establishing a Marxist-Leninist government closely allied with Cuba and the USSR." }
+            ],
+            "Mild alignment": [{ codes: ["GNQ"], reason: "Teodoro Obiang overthrows his uncle in Equatorial Guinea. He eventually opens the country to massive US oil extraction, aligning pragmatically with Washington." }]
+        },
+        1980: { 
+            "Mild alignment": [{ codes: ["IRQ", "CHN"], reason: "Strategic convergence. The US implicitly backs Saddam against Iran. Deng Xiaoping integrates China into Western supply chains to build state capacity." }, { codes: ["PER"], reason: "Return to democracy under Belaunde Terry, shifting Peru back toward neoliberal economic norms and US alignment." }],
+            "Neutral": [{ codes: ["ZWE"], reason: "Zimbabwe achieves independence under Mugabe, adopting a pragmatic stance that tolerates Western capital." }],
+            "Strong alignment": [{ codes: ["JAM"], reason: "Edward Seaga defeats Manley in Jamaica, initiating a hard pivot back to US alignment, breaking ties with Cuba, and embracing Reaganomics." }]
+        },
+        1982: { "Mild alignment": [{ codes: ["ESP"], reason: "Felipe Gonzalez's socialist government formally joins NATO but maintains some diplomatic distance from unilateral US Cold War posturing." }] },
+        1983: { 
+            "Strong opposition": [{ codes: ["BFA"], reason: "Thomas Sankara leads a Marxist revolution, renaming the country Burkina Faso, rejecting IMF debt traps, and aggressively opposing French neo-colonialism." }],
+            "Strong alignment": [{ codes: ["GRD"], reason: "Operation Urgent Fury. The US military invades Grenada, overthrowing the Marxist government and violently dragging the island back into the US sphere." }]
+        },
+        1984: { "Strong alignment": [{ codes: ["CAN"], reason: "Mulroney government. Canada pivots to Reagan-era free trade and uncompromising security alignment, ending the Trudeau era of multilateral friction." }] },
+        1987: { "Mild alignment": [{ codes: ["BFA"], reason: "Blaise Compaoré assassinates Sankara in a French-backed coup, realigning Burkina Faso as a pliable proxy for Western intelligence in the Sahel." }] },
+        1989: { 
+            "Strong alignment": [{ codes: ["PAN"], reason: "Operation Just Cause. The US military directly invades Panama to depose Noriega, securing absolute control over the canal zone." }],
+            "Mild alignment": [{ codes: ["POL", "HUN", "ROU", "CZE", "SVK"], reason: "The fall of the Iron Curtain. Eastern European states sprint away from Soviet influence, signaling urgent desire for Western integration." }]
+        },
+        1990: { 
+            "Strong alignment": [{ codes: ["NIC"], reason: "Following a decade of US-funded Contra terrorism, Violeta Chamorro is elected, returning Nicaragua strictly to the US geopolitical and economic fold." }, { codes: ["PER"], reason: "Alberto Fujimori assumes power, executing violent counter-insurgency and strict neoliberal shock therapy fully supported by Washington." }],
+            "Strong opposition": [{ codes: ["IRQ"], reason: "Saddam Hussein invades Kuwait. Iraq is immediately subjected to overwhelming US military force and crippling sanctions." }], 
+            "Neutral": [{ codes: ["MNG", "NAM"], reason: "Mongolia establishes a balancing 'Third Neighbor' policy. Namibia achieves independence." }]
+        },
         1991: { 
-            "Strong alignment": [{ codes: ["RUS", "POL", "UKR", "EST", "LVA", "LTU", "KOR"], reason: "Yeltsin Era convergence." }],
-            "Neutral": [{ codes: ["IND", "KAZ", "UZB", "TKM", "KGZ", "TJK", "AGO", "MOZ", "ETH"], reason: "Post-Cold War recalibration; former proxies adopt autonomy." }],
-            "Mild opposition": [{ codes: ["CHN"], reason: "Post-Tiananmen: Independent stance while seeking WTO entry." }]
+            "Strong alignment": [{ codes: ["RUS", "POL", "UKR", "EST", "LVA", "LTU"], reason: "The Unipolar Moment. Following the USSR's collapse, Russia and Eastern Europe implement US-backed 'shock therapy' and seek rapid integration into NATO/EU." }, { codes: ["ETH", "AGO", "MOZ"], reason: "Post-Soviet recalibration. Former proxies move to Neutral to survive the absence of Soviet military backing." }], 
+            "Neutral": [{ codes: ["IND", "KAZ", "UZB", "TKM", "KGZ", "TJK"], reason: "Central Asian autocracies and India adopt pragmatic, multi-vector diplomacy to attract Western capital without ceding sovereignty." }],
+            "Mild opposition": [{ codes: ["CHN"], reason: "Post-Tiananmen. China accelerates economic integration (WTO) while modernization of the PLA begins in preparation for future competition." }] 
         },
-        1992: { "Strong opposition": [{ codes: ["SRB"], reason: "Yugoslav Wars: Heavy US sanctions on Milosevic." }], "Mild alignment": [{ codes: ["HRV", "BIH", "MKD"], reason: "US/NATO backing during Yugoslav breakup." }] },
-        1993: { "Mild alignment": [{ codes: ["CAN", "SVK"], reason: "Chrétien (CAN) shift to liberal internationalism. Independent Slovakia (SVK)." }] },
-        1994: { "Mild opposition": [{ codes: ["ZAF"], reason: "Post-Apartheid: Mandela shifts ZAF to non-aligned, anti-imperialist rhetoric." }] },
-        1995: { "Mild alignment": [{ codes: ["SWE", "FIN", "AUT"], reason: "EU Accession: Deeper integration into Western economic structures." }] },
-        1999: { "Strong opposition": [{ codes: ["VEN"], reason: "Hugo Chavez Revolution." }] },
-        2000: { "Mild alignment": [{ codes: ["RUS"], reason: "Early Putin pragmatic cooperation." }], "Neutral": [{ codes: ["SRB"], reason: "Post-Milosevic balancing." }] },
+        1993: { 
+            "Mild alignment": [{ codes: ["CAN"], reason: "The Chrétien government returns Canada to liberal internationalism, prioritizing UN mandates over unilateral US action while maintaining strict economic integration via NAFTA." }],
+            "Neutral": [{ codes: ["ERI"], reason: "Eritrea achieves formal independence from Ethiopia, initially maintaining pragmatic, neutral relations with the West." }]
+        },
+        1994: { "Mild opposition": [{ codes: ["ZAF"], reason: "Post-Apartheid. Mandela's ANC abandons its role as a US proxy, adopting a fiercely independent pro-Global South policy critical of Western hegemony." }] },
+        1999: { "Strong opposition": [{ codes: ["VEN"], reason: "Bolivarian Revolution. Hugo Chavez leverages oil to fund anti-US movements across the Americas, directly challenging the Monroe Doctrine." }] },
+        2001: { "Strong opposition": [{ codes: ["ERI"], reason: "Following a crackdown on dissent and border wars, the US heavily sanctions Isaias Afwerki's regime. Eritrea becomes a highly militarized, anti-Western pariah state." }] },
         2003: { 
-            "Strong alignment": [{ codes: ["AUS", "ESP", "ITA", "POL", "GBR", "JPN"], reason: "Coalition of the Willing: Direct support for Iraq invasion." }],
-            "Mild opposition": [{ codes: ["FRA", "DEU", "BRA", "ARG", "CHL"], reason: "Iraq War friction & Pink Tide: Rejection of US unilateralism." }],
-            "Mild alignment": [{ codes: ["CAN"], reason: "Chrétien: Divergence on Iraq." }]
+            "Strong alignment": [{ codes: ["AUS", "ESP", "ITA", "POL", "GBR", "JPN"], reason: "The 'Coalition of the Willing.' Providing direct military cover for the US invasion of Iraq." }],
+            "Mild alignment": [{ codes: ["CAN"], reason: "Chrétien's refusal. Canada declines participation in the Iraq invasion without a UN mandate, asserting a degree of diplomatic independence from the Bush administration." }], 
+            "Mild opposition": [{ codes: ["FRA", "DEU", "BRA", "ARG"], reason: "The Iraq Rift. Traditional allies (FR, DEU) and the rising Pink Tide in LatAm reject US unilateralism, fracturing the post-Cold War consensus." }] 
         },
-        2004: { "Mild opposition": [{ codes: ["ESP"], reason: "Zapatero: Iraq withdrawal." }], "Strong alignment": [{ codes: ["ROU", "SVK", "HUN"], reason: "NATO Accession." }] },
-        2005: { "Mild opposition": [{ codes: ["URY"], reason: "Broad Front (Vazquez): First left-leaning shift in modern Uruguay." }] },
-        2006: { "Strong alignment": [{ codes: ["CAN"], reason: "Harper: Hard return to traditional US-aligned security policy." }], "Mild opposition": [{ codes: ["BOL"], reason: "Evo Morales: Indigenous sovereignty." }] },
-        2007: { "Strong opposition": [{ codes: ["ECU"], reason: "Rafael Correa: Radical anti-US shift; joins ALBA." }] },
-        2008: { "Strong opposition": [{ codes: ["RUS"], reason: "Georgia War/Munich speech break." }], "Mild opposition": [{ codes: ["PRY"], reason: "Lugo Pink Tide." }], "Strong alignment": [{ codes: ["KOS"], reason: "US-backed independence." }] },
-        2009: { "Strong alignment": [{ codes: ["HRV", "ALB"], reason: "NATO Accession." }] },
-        2012: { "Strong alignment": [{ codes: ["PRY"], reason: "Post-Lugo conservative return." }], "Strong opposition": [{ codes: ["CHN"], reason: "Xi Jinping: Systemic competition." }] },
-        2014: { "Mild alignment": [{ codes: ["IND"], reason: "Modi: Quad integration." }] },
-        2015: { "Strong alignment": [{ codes: ["ARG"], reason: "Macri pivot." }], "Mild alignment": [{ codes: ["CAN"], reason: "Trudeau Jr multilateralism." }], "Strong opposition": [{ codes: ["YEM"], reason: "Civil War Houthi state." }] },
-        2016: { "Strong alignment": [{ codes: ["BRA"], reason: "Temer: Reversal of PT-era non-alignment in favor of US ties." }], "Mild opposition": [{ codes: ["TUR"], reason: "Post-coup Erdogan pivots to Russian S-400s." }] },
-        2017: { "Strong alignment": [{ codes: ["ECU"], reason: "Moreno pivot to West." }] },
-        2018: { "Strong alignment": [{ codes: ["BRA", "CHL"], reason: "Bolsonaro/Piñera II: High ideological and security alignment." }], "Mild opposition": [{ codes: ["MEX", "HUN"], reason: "AMLO critical sovereignty focus. Orban illiberal pivot." }] },
-        2019: { "Mild opposition": [{ codes: ["ARG"], reason: "Fernández: Return of left-leaning sovereignty focus." }], "Mild alignment": [{ codes: ["BOL"], reason: "Añez interim." }] },
-        2020: { "Strong alignment": [{ codes: ["URY", "ECU", "MKD"], reason: "Lacalle Pou and Lasso. MKD joins NATO." }], "Mild opposition": [{ codes: ["BOL", "MLI"], reason: "Arce returns MAS. Mali junta pivots to Russia." }] },
-        2021: { "Strong alignment": [{ codes: ["ECU"], reason: "Lasso: Solidification of pro-US alignment." }], "Strong opposition": [{ codes: ["AFG"], reason: "Taliban Return." }] },
+        2004: { 
+            "Mild opposition": [{ codes: ["ESP"], reason: "Following the Madrid train bombings, the Zapatero government is elected and immediately withdraws Spanish troops from Iraq, pivoting back to the critical EU-core." }], 
+            "Strong alignment": [{ codes: ["ROU", "SVK", "HUN"], reason: "Formal accession to NATO. These states permanently lock their military structures into the US-led alliance, viewing Washington as the ultimate guarantor against Russia." }] 
+        },
+        2005: { "Mild opposition": [{ codes: ["LKA"], reason: "Mahinda Rajapaksa assumes power. Facing Western criticism over human rights during the civil war's end, Sri Lanka pivots heavily toward Chinese infrastructure financing." }, { codes: ["URY"], reason: "The Broad Front (Vazquez/Mujica) marks Uruguay's left-leaning shift, prioritizing regional integration (Mercosur) over strict bilateral US compliance." }] },
+        2006: { 
+            "Strong alignment": [{ codes: ["CAN"], reason: "Stephen Harper's conservative government initiates a hard return to traditional US-aligned security policy, deeply integrating military and energy strategies." }], 
+            "Mild opposition": [{ codes: ["BOL"], reason: "Evo Morales becomes Bolivia's first indigenous president. He nationalizes hydrocarbons and expels the DEA, pursuing resource sovereignty." }],
+            "Strong opposition": [{ codes: ["NIC"], reason: "Daniel Ortega and the Sandinistas return to power in Nicaragua, immediately aligning with Venezuela and Russia to oppose US hemispheric dominance." }] 
+        },
+        2007: { 
+            "Strong opposition": [{ codes: ["ECU"], reason: "Rafael Correa defaults on sovereign debt, evicts the US military from Manta Air Base, and joins the anti-US ALBA bloc." }],
+            "Mild alignment": [{ codes: ["AUS"], reason: "Kevin Rudd's Labor government withdraws combat troops from Iraq and emphasizes an 'Asia-literate' policy, slightly distancing Australia from reflexive US security alignment." }]
+        },
+        2008: { 
+            "Strong opposition": [{ codes: ["RUS"], reason: "Structural Break. Following NATO's expansion promises to Ukraine/Georgia, Putin launches the Georgia War, permanently exiting the Western-led security order." }], 
+            "Mild opposition": [{ codes: ["PRY"], reason: "Fernando Lugo's election breaks decades of right-wing rule in Paraguay, briefly pulling the state into the orbit of the regional Pink Tide." }]
+        },
+        2011: { 
+            "Strong alignment": [{ codes: ["SSD"], reason: "South Sudan achieves independence with massive political and financial backing from the US." }, { codes: ["ESP"], reason: "Mariano Rajoy's conservative victory returns Spain to strict alignment with Western fiscal and security mandates." }],
+            "Mild alignment": [{ codes: ["PER"], reason: "Ollanta Humala governs as a moderate pragmatist, maintaining free trade agreements with the US despite initial left-wing rhetoric." }] 
+        },
+        2012: { 
+            "Strong alignment": [{ codes: ["PRY"], reason: "Following the controversial impeachment of Lugo, Paraguay returns to the control of the traditional, highly conservative, pro-US Colorado Party." }], 
+            "Strong opposition": [{ codes: ["CHN"], reason: "Xi Jinping takes power, abandoning 'hide and bide'. China aggressively militarizes the South China Sea and launches the Belt and Road Initiative." }] 
+        },
+        2013: { 
+            "Strong alignment": [{ codes: ["AUS"], reason: "The election of Tony Abbott abruptly ends the Rudd/Gillard era, executing a hardline pivot back to strict Anglosphere security integration." }],
+            "Neutral": [{ codes: ["SSD"], reason: "South Sudan collapses into horrific civil war. The US imposes arms embargoes and sanctions, dissolving the proxy relationship." }] 
+        },
+        2014: { 
+            "Mild alignment": [{ codes: ["IND"], reason: "Narendra Modi deepens pragmatic security ties with the US via the Quad to counter China, while refusing formal alliance status." }] 
+        },
+        2015: { 
+            "Strong alignment": [{ codes: ["ARG"], reason: "Mauricio Macri pivots Argentina back to global financial markets, settles with US hedge funds, and realigns security policy." }, { codes: ["AUS"], reason: "Malcolm Turnbull replaces Abbott, maintaining the absolute structural primacy of the US security alliance." }], 
+            "Mild alignment": [{ codes: ["CAN"], reason: "Justin Trudeau returns Canada to a multilateral focus, causing minor friction over trade and climate policy." }], 
+            "Strong opposition": [{ codes: ["YEM"], reason: "The US backs a brutal Saudi bombing campaign against the Houthis. The resulting Houthi quasi-state becomes an active opponent to US shipping." }] 
+        },
+        2016: { 
+            "Strong alignment": [{ codes: ["BRA"], reason: "The impeachment of Dilma Rousseff brings Michel Temer to power. He rapidly dismantles PT-era non-alignment and initiates a fire-sale of state assets." }], 
+            "Mild opposition": [
+                { codes: ["TUR"], reason: "Post-coup attempt, Erdogan adopts a highly transactional foreign policy, famously purchasing Russian S-400 missiles despite NATO membership." },
+                { codes: ["PHL"], reason: "Rodrigo Duterte threatens to sever military ties with the US, pivoting violently toward Chinese investment and Russian arms." }
+            ] 
+        },
+        2017: { 
+            "Strong alignment": [{ codes: ["ECU"], reason: "Lenín Moreno betrays Correa's anti-Western policies. He signs IMF deals and returns Ecuador to strict US alignment." }] 
+        },
+        2018: { 
+            "Strong alignment": [{ codes: ["BRA", "CHL"], reason: "Jair Bolsonaro (Brazil) and Sebastián Piñera (Chile) create a right-wing bloc characterized by total ideological and security alignment with the US." }], 
+            "Mild opposition": [
+                { codes: ["MEX"], reason: "AMLO prioritizes 'state sovereignty', halting energy privatization and refusing to condemn US adversaries." },
+                { codes: ["HUN"], reason: "Viktor Orban pulls Hungary into an illiberal, pro-Russian wedge within NATO." },
+                { codes: ["ESP"], reason: "Pedro Sanchez forms a left-wing coalition, taking a marginally more critical stance on absolute US hegemony, particularly regarding the Middle East." }
+            ],
+            "Strong opposition": [{ codes: ["CAF"], reason: "The Central African Republic effectively outsources its state security to the Russian Wagner Group, entirely displacing French and US influence." }]
+        },
+        2019: { 
+            "Mild opposition": [{ codes: ["ARG"], reason: "The return of Peronism under Alberto Fernández sees Argentina default on IMF loans and pivot back toward left-leaning regional integration." }], 
+            "Mild alignment": [{ codes: ["BOL"], reason: "The military-backed ouster of Evo Morales installs the interim right-wing government of Jeanine Añez, pivoting back to US/OAS alignment." }],
+            "Neutral": [{ codes: ["SDN"], reason: "Omar al-Bashir is ousted. The transitional government balances regional powers and successfully lobbies for removal from the US State Sponsor of Terrorism list." }] 
+        },
+        2020: { 
+            "Strong alignment": [{ codes: ["URY", "ECU", "MKD"], reason: "Elections in Uruguay (Lacalle Pou) and Ecuador (Lasso) solidify conservative, pro-market, US-friendly governments. North Macedonia joins NATO." }], 
+            "Mild opposition": [
+                { codes: ["BOL"], reason: "Luis Arce returns the MAS party to power in Bolivia, resuming a resource sovereignty focus, though more pragmatically than Morales." },
+                { codes: ["MLI"], reason: "A military coup in Mali begins the violent expulsion of Western counter-terrorism forces, replacing them entirely with Russian Wagner mercenaries." }
+            ] 
+        },
+        2021: { 
+            "Strong alignment": [{ codes: ["ECU"], reason: "Guillermo Lasso deepens Ecuador's reliance on US security assistance and DEA cooperation to combat surging cartel violence." }],
+            "Mild opposition": [{ codes: ["PER"], reason: "Pedro Castillo briefly shifts Peru toward left-leaning regional sovereignty and populism." }],
+            "Mild alignment": [{ codes: ["SLV"], reason: "Nayib Bukele maintains dollarization but creates friction with the US over human rights, leveraging Chinese investment as a counter-weight." }], 
+            "Strong opposition": [{ codes: ["AFG"], reason: "The chaotic US military withdrawal allows the Taliban to rapidly retake control, converting a 20-year dependent client state back into a hostile regime." }] 
+        },
         2022: {
-            "Mild alignment": [{ codes: ["AUS", "CHE"], reason: "Albanese: Pacific diplomacy focus. Switzerland adopts Russian sanctions." }],
-            "Strong alignment": [{ codes: ["UKR", "SWE", "FIN"], reason: "Ukraine survival alignment. SWE/FIN abandon neutrality for NATO." }],
-            "Neutral": [{ codes: ["BRA"], reason: "Bolsonaro balancing fertilizers." }],
-            "Strong opposition": [{ codes: ["ZAF", "BFA", "NER"], reason: "ZAF leads ICJ. Sahel juntas eject US/France for Russia." }]
+            "Mild alignment": [
+                { codes: ["AUS"], reason: "The Albanese government prioritizes Pacific diplomacy and multilateralism over pure militarism, though remaining firmly locked into AUKUS." }, 
+                { codes: ["CHE"], reason: "Historically neutral Switzerland breaks precedent to adopt US/EU financial sanctions against Russia, integrating into the Western financial warfare architecture." }
+            ],
+            "Neutral": [{ codes: ["BRA"], reason: "In his final year, Bolsonaro refuses to sanction Russia, explicitly prioritizing Brazilian agribusiness access to Russian fertilizers over Washington's demands." }],
+            "Mild opposition": [{ codes: ["HND"], reason: "Xiomara Castro is elected, promising a return to democratic socialism, recognizing Beijing over Taiwan, and distancing Honduras from US interventionism." }],
+            "Strong alignment": [
+                { codes: ["UKR"], reason: "The Russian invasion structurally alters Europe. Ukraine becomes entirely dependent on US military/financial lifelines." }, 
+                { codes: ["SWE", "FIN"], reason: "Sweden and Finland abandon decades of armed neutrality to seek urgent NATO integration." },
+                { codes: ["PER"], reason: "Following Castillo's ouster, Dina Boluarte violently cracks down on protests and requests US military training assistance to maintain control." },
+                { codes: ["PHL"], reason: "Ferdinand Marcos Jr. executes a massive pivot back to US alignment, granting Washington access to strategic military bases to counter China." }
+            ],
+            "Strong opposition": [
+                { codes: ["ZAF"], reason: "South Africa leverages BRICS to challenge the Western financial system and maintains naval drills with Russia/China." }, 
+                { codes: ["BFA"], reason: "A military junta in Burkina Faso violently expels French troops, severing Western security ties and inviting Russian military support." }
+            ]
         },
-        2023: { "Strong alignment": [{ codes: ["ARG", "ECU"], reason: "Milei and Noboa." }], "Mild opposition": [{ codes: ["BRA", "CHL", "COL", "SVK"], reason: "Lula/Boric/Petro critical stances. Fico halts Ukraine aid." }] }
+        2023: { 
+            "Strong alignment": [{ codes: ["ARG"], reason: "Javier Milei enacts a radical shock-therapy state, voluntarily dollarizing discourse and aligning Argentina completely with US and Israeli strategic objectives." }, { codes: ["ECU"], reason: "Daniel Noboa declares an internal armed conflict, inviting massive US military presence to fight cartels." }], 
+            "Mild opposition": [
+                { codes: ["BRA", "CHL", "COL"], reason: "A new Pink Tide (Lula, Boric, Petro) consolidates. They consistently condemn US hegemony, refuse to arm Ukraine, and actively critique US policy in the Middle East." }, 
+                { codes: ["SVK"], reason: "Robert Fico's election in Slovakia halts military aid to Ukraine, fracturing NATO unity and aligning closely with Hungary's obstructionist stance." },
+                { codes: ["IRL"], reason: "Ireland forcefully breaks with the US consensus on the Middle East, leading EU efforts to recognize Palestinian statehood and heavily critiquing US arms supplies to Israel." }
+            ],
+            "Strong opposition": [{ codes: ["NER"], reason: "A military coup overthrows the US-backed president. The junta immediately evicts the massive US drone base in Agadez and pivots to a Russian security alliance." }] 
+        }
     };
 
+    // Tactical Era Summaries
     const yearInsights = {
-        1945: "Western Order: Founding of the UN dominated by an Allied-LatAm voting bloc.",
-        1950: "Korean War: South Korea structurally locked into the US security architecture.",
-        1964: "Cold War Interventions: US-backed coups (e.g., Brazil) solidify anti-communist regional control.",
-        1972: "Realpolitik: Nixon's visit to China creates a temporary neutral buffer vs USSR.",
-        1991: "Unipolarity: Fall of the USSR leads to broad Western integration in Eastern Europe.",
-        2003: "Iraq Rift: Unilateralism shatters the Western consensus and fuels the South American 'Pink Tide'.",
-        2008: "Structural Break: Russia's exit from the European security framework becomes permanent.",
-        2022: "Invasion Era: Rigid alignment around Ukraine while BRICS powers actively challenge US policy."
+        1945: "The Architecture of Hegemony: The US emerges from WWII with atomic supremacy and untouched industrial capacity. It dictates the Bretton Woods financial system, establishing dollar dominance. The Soviet Union secures a terrestrial empire in Eastern Europe, setting the stage for a bipolar world order heavily weighted toward Western maritime control.",
+        1950: "The Militarization of Containment: The outbreak of the Korean War ends post-WWII demobilization. The US massively expands its defense budget, structurally locks Japan and South Korea into its Pacific security architecture, and formally commits to the military defense of Taiwan, establishing the 'Island Chain' containment strategy.",
+        1960: "The Global South Awakens: The 'Year of Africa' sees massive decolonization. Newly independent states, lacking capital but possessing raw materials, embrace the Non-Aligned Movement. They attempt to leverage the superpower rivalry, refusing binary alignment to extract development aid and maintain national sovereignty.",
+        1964: "The Proxy Wars & Regime Control: The Cold War transitions into violent structural maintenance. To prevent resource nationalization and perceived Soviet creep, the US sponsors military coups across Latin America (starting with Brazil) and Africa, securing resource extraction via right-wing authoritarian proxies.",
+        1972: "Realpolitik and The Wedge: A masterstroke of diplomatic triangulation. Nixon and Kissinger visit China, tactically exploiting the Sino-Soviet split. By offering China economic integration and security guarantees against Moscow, the US creates a massive geopolitical wedge that fatally isolates the Soviet Union.",
+        1979: "The Year of Crisis: A catastrophic period for US regional hegemony. The Iranian Revolution removes the Shah (the prime US Middle Eastern enforcer), creating a hostile theocracy. Simultaneously, the Soviet Union invades Afghanistan. The US responds by arming Mujahideen proxies and aligning with Saddam Hussein.",
+        1989: "The Collapse of the Bloc: The economic unsustainability of the Soviet model triggers a cascading collapse of the Iron Curtain. Eastern European satellite states rapidly overthrow their communist governments, urgently signaling their desire to integrate into Western capital markets and the NATO security umbrella.",
+        1991: "The Unipolar Moment: The Soviet Union ceases to exist. The United States possesses uncontested, singular global supremacy. Washington enforces the 'Washington Consensus' of free trade, privatization, and dollar dominance across the former Eastern Bloc and the developing world without peer opposition.",
+        2001: "The War on Terror: Following 9/11, the US leverages its unipolar power to launch global counter-terrorism operations. This era forces a binary 'with us or against us' alignment, resulting in the invasion of Afghanistan and a temporary, pragmatic alignment with Putin's Russia.",
+        2003: "The Fracture of Consensus: The unilateral US invasion of Iraq based on flawed intelligence shatters the NATO alliance (opposed by France and Germany) and destroys American moral authority. This distraction allows the 'Pink Tide' to sweep South America, rejecting US economic dictates.",
+        2008: "The Return of Systemic Rivalry: The illusion of permanent US hegemony ends. Following the Bucharest NATO summit offering membership to Ukraine and Georgia, Putin launches the Georgia War, permanently breaking with the West. Concurrently, the Global Financial Crisis severely damages US economic credibility.",
+        2014: "The Territorial Revision: Russia forcefully annexes Crimea to halt NATO/EU expansion, demonstrating a willingness to use military force to alter borders. Concurrently, China accelerates its island-building in the South China Sea, forcing a delayed and distracted US 'Pivot to Asia'.",
+        2022: "The Polycentric Reality: The Russian invasion of Ukraine instantly solidifies a heavily armed Western bloc. However, the 'Global South' (led by BRICS powers India, Brazil, and South Africa) explicitly refuses to isolate Russia, strategically hedging to build alternative financial structures and bypass US sanctions."
     };
+
+    const yearInsightsKeys = Object.keys(yearInsights).map(Number).sort((a,b)=>a-b);
+
+    function getCountryPeriod(iso, targetYear) {
+        let start = 1945;
+        let end = 2025;
+        let targetStatus = "Unknown";
+        let targetReason = "";
+        for (let y = 1945; y <= targetYear; y++) {
+            if (timelineData[y]) {
+                for (const [status, groups] of Object.entries(timelineData[y])) {
+                    for (const group of groups) {
+                        if (group.codes.includes(iso)) {
+                            targetStatus = status;
+                            targetReason = group.reason;
+                            start = y;
+                        }
+                    }
+                }
+            }
+        }
+        for (let y = targetYear + 1; y <= 2025; y++) {
+            if (timelineData[y]) {
+                for (const [status, groups] of Object.entries(timelineData[y])) {
+                    for (const group of groups) {
+                        if (group.codes.includes(iso)) {
+                            return { start, end: y - 1, status: targetStatus, reason: targetReason };
+                        }
+                    }
+                }
+            }
+        }
+        return { start, end, status: targetStatus, reason: targetReason };
+    }
+
+    function getInsightPeriod(targetYear) {
+        let start = 1945;
+        let end = 2025;
+        let text = "Mapping structural dynamics...";
+        for (let i = 0; i < yearInsightsKeys.length; i++) {
+            if (yearInsightsKeys[i] <= targetYear) {
+                start = yearInsightsKeys[i];
+                text = yearInsights[yearInsightsKeys[i]];
+                end = (i + 1 < yearInsightsKeys.length) ? yearInsightsKeys[i+1] - 1 : 2025;
+            }
+        }
+        return { start, end, text };
+    }
 
     async function init() {
         const container = document.getElementById('map-container');
         const world = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json");
         geoData = topojson.feature(world, world.objects.countries).features;
-        const projection = d3.geoNaturalEarth1().scale(container.clientWidth / 5.2).translate([container.clientWidth / 2.1, container.clientHeight / 1.7]);
+        const projection = d3.geoNaturalEarth1().scale(container.clientWidth / 5.2).translate([container.clientWidth / 2.1, container.clientHeight / 1.6]);
         const path = d3.geoPath().projection(projection);
         d3.select("#map").selectAll("path").data(geoData).enter().append("path")
             .attr("d", path).attr("class", "country").attr("fill", COLORS.Unknown)
-            .on("mouseover", showTooltip).on("mousemove", moveTooltip).on("mouseout", hideTooltip).on("click", handleCountryClick);
+            .on("mouseover", showTooltip).on("mousemove", moveTooltip).on("mouseout", hideTooltip);
         setupControls();
         updateMap(1945);
     }
@@ -289,23 +498,10 @@
         const playBtn = document.getElementById('play-pause');
         slider.oninput = (e) => { currentYear = parseInt(e.target.value); updateMap(currentYear); if (isPlaying) pause(); };
         playBtn.onclick = () => isPlaying ? pause() : play();
-        function play() { isPlaying = true; document.getElementById('play-icon').classList.add('hidden'); document.getElementById('pause-icon').classList.remove('hidden'); interval = setInterval(() => { if (currentYear >= 2025) return pause(); currentYear++; slider.value = currentYear; updateMap(currentYear); }, 500); }
+        document.getElementById('step-back').onclick = () => { if (isPlaying) pause(); if (currentYear > 1945) { currentYear--; slider.value = currentYear; updateMap(currentYear); } };
+        document.getElementById('step-forward').onclick = () => { if (isPlaying) pause(); if (currentYear < 2025) { currentYear++; slider.value = currentYear; updateMap(currentYear); } };
+        function play() { isPlaying = true; document.getElementById('play-icon').classList.add('hidden'); document.getElementById('pause-icon').classList.remove('hidden'); interval = setInterval(() => { if (currentYear >= 2025) return pause(); currentYear++; slider.value = currentYear; updateMap(currentYear); }, 800); }
         function pause() { isPlaying = false; document.getElementById('play-icon').classList.remove('hidden'); document.getElementById('pause-icon').classList.add('hidden'); clearInterval(interval); }
-        
-        document.getElementById('btn-analyze-era').addEventListener('click', async () => { 
-            if (isPlaying) pause(); 
-            openModal(`Global Dynamics: ${currentYear}`); 
-            const prompt = `Year: ${currentYear}. Write a tactical 80-word summary of global power alignments relative to the US. Use bullet points.`; 
-            try { 
-                const response = await callGeminiAPI(prompt); 
-                document.getElementById('gemini-loading').classList.add('hidden'); 
-                document.getElementById('gemini-content').innerHTML = response.replace(/\n/g, '<br>'); 
-                document.getElementById('gemini-content').classList.remove('hidden'); 
-            } catch (err) { 
-                document.getElementById('gemini-loading').classList.add('hidden'); 
-                document.getElementById('gemini-error').classList.remove('hidden'); 
-            }
-        });
     }
 
     function getCumulativeData(year) {
@@ -329,71 +525,45 @@
             if (iso === "GRL") return COLORS[activeStates["DNK"]?.status || "Unknown"];
             return COLORS[activeStates[iso]?.status || "Unknown"];
         });
-        
-        let text = "Mapping structural dynamics...";
-        if (year >= 1945) text = "Western Order established; Iron Curtain solidifies.";
-        if (year >= 1960) text = "Decolonization: Rise of the Non-Aligned Movement.";
-        if (year >= 1979) text = "Crisis: Iranian Revolution and Soviet Afghan invasion.";
-        if (year >= 1991) text = "Unipolarity: Collapse of the USSR leads to Western consensus.";
-        if (year >= 2003) text = "Fracture: Iraq War splits NATO and fuels LatAm 'Pink Tide'.";
-        if (year >= 2012) text = "Multipolarity: Xi Jinping and Putin shift to systemic opposition.";
-        if (year >= 2022) text = "Conflict Era: Ukraine solidifies West; BRICS hedges.";
-        document.getElementById('insight-text').innerText = text;
+        const insight = getInsightPeriod(year);
+        document.getElementById('insight-text').innerText = insight.text;
+        document.getElementById('pulse-period').innerText = `[${insight.start} - ${insight.end}]`;
     }
 
     function showTooltip(event, d) {
         const iso = ISO_MAP[d.id] || NAME_TO_ISO[d.properties.name];
-        let sd = getCumulativeData(currentYear)[iso];
-        if (iso === "GRL") sd = getCumulativeData(currentYear)["DNK"];
-        
-        const status = iso === "USA" ? "Strong alignment" : (sd?.status || "Unknown");
+        let queryIso = iso; if (iso === "GRL") queryIso = "DNK";
+        const periodData = getCountryPeriod(queryIso, currentYear);
+        const status = iso === "USA" ? "Strong alignment" : (periodData.status || "Unknown");
+        const reason = iso === "USA" ? "The imperial core. The United States utilizes dollar hegemony, overwhelming naval supremacy, and a vast network of military bases to enforce a global security architecture favorable to its capital interests." : (periodData.reason || "State data carried forward from established baseline.");
         d3.select("#tooltip").style("display", "block").html(`
-            <div class='font-bold text-white mb-1'>${d.properties.name} [${iso || '??'}]</div>
-            <div class='flex items-center gap-2 mb-1'>
-                <div class='w-2 h-2 rounded-full' style='background-color:${COLORS[status]||'#ccc'}'></div>
-                <span style='color:${COLORS[status]||'#ccc'}'>${status}</span>
+            <div class='font-bold text-white mb-1.5 text-sm border-b border-slate-600 pb-1 flex justify-between items-center'>
+                <span>${d.properties.name} <span class='text-[9px] font-mono text-slate-400 font-normal'>[${iso || '??'}]</span></span>
+                <span class='text-[9px] font-mono text-slate-400 bg-white/10 px-1 py-0.5 rounded'>${periodData.start} - ${periodData.end}</span>
             </div>
-            <p class='text-[10px] text-slate-300 italic'>${sd?.reason || "No historical data."}</p>
-            <div class='text-[9px] text-blue-400 mt-2 border-t border-white/10 pt-1'>Click for AI Analysis</div>
+            <div class='flex items-center gap-2 mb-2'>
+                <div class='w-2.5 h-2.5 rounded-sm shadow-sm' style='background-color:${COLORS[status]||'#ccc'}'></div>
+                <span class='font-semibold tracking-wide' style='color:${COLORS[status]||'#ccc'}'>${status}</span>
+            </div>
+            <p class='text-xs text-slate-200'>${reason}</p>
         `);
     }
 
-    function moveTooltip(event) { let x = event.clientX + 20; let y = event.clientY + 20; if (x + 280 > window.innerWidth) x = event.clientX - 300; d3.select("#tooltip").style("left", x + 'px').style("top", y + 'px'); }
+    function moveTooltip(event) { 
+        let x = event.clientX + 20; let y = event.clientY + 20; 
+        if (x + 340 > window.innerWidth) x = event.clientX - 340; 
+        if (y + 150 > window.innerHeight) y = event.clientY - 150;
+        d3.select("#tooltip").style("left", x + 'px').style("top", y + 'px'); 
+    }
     function hideTooltip() { d3.select("#tooltip").style("display", "none"); }
 
-    async function handleCountryClick(event, d) {
-        if (isPlaying) document.getElementById('play-pause').click();
-        const iso = ISO_MAP[d.id] || NAME_TO_ISO[d.properties.name];
-        let countryName = d.properties.name;
-        let queryIso = iso;
-        if (iso === "GRL") { queryIso = "DNK"; countryName = "Denmark (controlling Greenland)"; }
-
-        const status = iso === "USA" ? "Strong alignment" : (getCumulativeData(currentYear)[queryIso]?.status || "Unknown");
-        openModal(`${countryName} in ${currentYear}`);
-        hideTooltip();
-        
-        const prompt = `Year: ${currentYear}. Why is ${countryName} classified as '${status}' relative to US hegemony? Mention leaders, structural incentives. 70 words max. Tactical tone.`;
-        try { 
-            const response = await callGeminiAPI(prompt); 
-            document.getElementById('gemini-loading').classList.add('hidden'); 
-            document.getElementById('gemini-content').innerHTML = `<p>${response.replace(/\n/g, '<br>')}</p>`; 
-            document.getElementById('gemini-content').classList.remove('hidden'); 
-        } catch (err) { 
-            document.getElementById('gemini-loading').classList.add('hidden'); 
-            document.getElementById('gemini-error').classList.remove('hidden'); 
-        }
-    }
-
     const NAME_TO_ISO = { 
-        "South Africa": "ZAF", "Egypt": "EGY", "United Arab Emirates": "ARE", "North Korea": "PRK", "South Korea": "KOR",
-        "Greenland": "GRL", "Turkey": "TUR", "Sweden": "SWE", "Finland": "FIN", "Italy": "ITA", "Iceland": "ISL",
-        "Serbia": "SRB", "Croatia": "HRV", "Austria": "AUT", "Romania": "ROU", "North Macedonia": "MKD", "Macedonia": "MKD",
-        "Hungary": "HUN", "Kosovo": "KOS", "Bosnia and Herzegovina": "BIH", "Switzerland": "CHE", "Slovakia": "SVK", "Mongolia": "MNG"
+        "South Africa": "ZAF", "Egypt": "EGY", "United Arab Emirates": "ARE", "North Korea": "PRK", "South Korea": "KOR", "Greenland": "GRL", "Turkey": "TUR", "Sweden": "SWE", "Finland": "FIN", "Italy": "ITA", "Iceland": "ISL", "Norway": "NOR", "Denmark": "DNK", "Saudi Arabia": "SAU", "Serbia": "SRB", "Croatia": "HRV", "Austria": "AUT", "Romania": "ROU", "North Macedonia": "MKD", "Macedonia": "MKD", "Hungary": "HUN", "Kosovo": "KOS", "Bosnia and Herzegovina": "BIH", "Switzerland": "CHE", "Slovakia": "SVK", "Mongolia": "MNG", "Syria": "SYR", "Lebanon": "LBN", "Philippines": "PHL", "Guatemala": "GTM", "Honduras": "HND", "El Salvador": "SLV", "Panama": "PAN", "Sudan": "SDN", "South Sudan": "SSD", "Chad": "TCD", "Mali": "MLI", "Morocco": "MAR", "Mauritania": "MRT", "Niger": "NER", "Ethiopia": "ETH", "Central African Republic": "CAF", "Togo": "TGO", "Zambia": "ZMB", "Botswana": "BWA", "Namibia": "NAM", "Uganda": "UGA", "Gabon": "GAB", "Congo": "COG", "Burkina Faso": "BFA", "Guinea": "GIN", "Sierra Leone": "SLE", "Papua New Guinea": "PNG", "Senegal": "SEN", "Cameroon": "CMR", "Ivory Coast": "CIV", "Sri Lanka": "LKA", "Bangladesh": "BGD", "Guyana": "GUY", "Suriname": "SUR", "French Guiana": "FRA", "Nepal": "NPL", "Bhutan": "BTN", "Equatorial Guinea": "GNQ", "Gambia": "GMB", "Lesotho": "LSO", "eSwatini": "SWZ", "Swaziland": "SWZ", "Djibouti": "DJI", "Eritrea": "ERI", "Comoros": "COM", "Seychelles": "SYC", "Mauritius": "MUS", "Cape Verde": "CPV", "Jamaica": "JAM", "Bahamas": "BHS", "Barbados": "BRB", "Grenada": "GRD", "Dominica": "DMA"
     };
     
     const ISO_MAP = {
-        "004": "AFG", "012": "DZA", "024": "AGO", "032": "ARG", "036": "AUS", "040": "AUT", "050": "BGD", "056": "BEL", "068": "BOL", "070": "BIH", "076": "BRA", "124": "CAN", "152": "CHL", "156": "CHN", "170": "COL", "188": "CRI", "191": "HRV", "192": "CUB", "203": "CZE", "208": "DNK", "214": "DOM", "218": "ECU", "222": "SLV", "233": "EST", "246": "FIN", "250": "FRA", "268": "GEO", "276": "DEU", "300": "GRC", "304": "GRL", "320": "GTM", "328": "GUY", "332": "HTI", "340": "HND", "348": "HUN", "352": "ISL", "356": "IND", "360": "IDN", "364": "IRN", "368": "IRQ", "372": "IRL", "376": "ISR", "380": "ITA", "388": "JAM", "392": "JPN", "398": "KAZ", "404": "KEN", "408": "PRK", "410": "KOR", "414": "KWT", "417": "KGZ", "428": "LVA", "422": "LBN", "434": "LBY", "440": "LTU", "458": "MYS", "484": "MEX", "496": "MNG", "504": "MAR", "508": "MOZ", "104": "MMR", "524": "NPL", "528": "NLD", "554": "NZL", "558": "NIC", "566": "NGA", "578": "NOR", "512": "OMN", "586": "PAK", "591": "PAN", "598": "PNG", "600": "PRY", "604": "PER", "608": "PHL", "616": "POL", "620": "PRT", "634": "QAT", "642": "ROU", "643": "RUS", "682": "SAU", "686": "SEN", "688": "SRB", "703": "SVK", "706": "SOM", "710": "ZAF", "724": "ESP", "144": "LKA", "729": "SDN", "740": "SUR", "752": "SWE", "756": "CHE", "760": "SYR", "762": "TJK", "764": "THA", "784": "ARE", "792": "TUR", "795": "TKM", "804": "UKR", "807": "MKD", "826": "GBR", "840": "USA", "858": "URY", "860": "UZB", "862": "VEN", "704": "VNM", "887": "YEM", "894": "ZMB", "716": "ZWE",
-        "008": "ALB", "031": "AZE", "048": "BHR", "112": "BLR", "116": "KHM", "174": "COM", "384": "CIV", "498": "MDA", "646": "RWA", "705": "SVN", "180": "COD", "834": "TZA", "450": "MDG", "818": "EGY"
+        "004": "AFG", "012": "DZA", "024": "AGO", "032": "ARG", "036": "AUS", "040": "AUT", "044": "BHS", "048": "BHR", "050": "BGD", "052": "BRB", "056": "BEL", "064": "BTN", "068": "BOL", "070": "BIH", "072": "BWA", "076": "BRA", "124": "CAN", "132": "CPV", "140": "CAF", "144": "LKA", "148": "TCD", "152": "CHL", "156": "CHN", "170": "COL", "174": "COM", "178": "COG", "180": "COD", "188": "CRI", "191": "HRV", "192": "CUB", "203": "CZE", "208": "DNK", "212": "DMA", "214": "DOM", "218": "ECU", "222": "SLV", "226": "GNQ", "231": "ETH", "232": "ERI", "233": "EST", "246": "FIN", "250": "FRA", "262": "DJI", "266": "GAB", "268": "GEO", "270": "GMB", "276": "DEU", "300": "GRC", "304": "GRL", "308": "GRD", "320": "GTM", "324": "GIN", "328": "GUY", "332": "HTI", "340": "HND", "348": "HUN", "352": "ISL", "356": "IND", "360": "IDN", "364": "IRN", "368": "IRQ", "372": "IRL", "376": "ISR", "380": "ITA", "384": "CIV", "388": "JAM", "392": "JPN", "398": "KAZ", "404": "KEN", "408": "PRK", "410": "KOR", "414": "KWT", "417": "KGZ", "422": "LBN", "426": "LSO", "428": "LVA", "434": "LBY", "440": "LTU", "450": "MDG", "458": "MYS", "466": "MLI", "478": "MRT", "480": "MUS", "484": "MEX", "496": "MNG", "504": "MAR", "508": "MOZ", "104": "MMR", "516": "NAM", "524": "NPL", "528": "NLD", "554": "NZL", "558": "NIC", "562": "NER", "566": "NGA", "578": "NOR", "512": "OMN", "586": "PAK", "591": "PAN", "598": "PNG", "600": "PRY", "604": "PER", "608": "PHL", "616": "POL", "620": "PRT", "634": "QAT", "642": "ROU", "643": "RUS", "682": "SAU", "686": "SEN", "688": "SRB", "690": "SYC", "694": "SLE", "703": "SVK", "706": "SOM", "710": "ZAF", "724": "ESP", "728": "SSD", "729": "SDN", "740": "SUR", "748": "SWZ", "752": "SWE", "756": "CHE", "760": "SYR", "762": "TJK", "764": "THA", "768": "TGO", "784": "ARE", "792": "TUR", "795": "TKM", "800": "UGA", "804": "UKR", "807": "MKD", "826": "GBR", "840": "USA", "858": "URY", "860": "UZB", "862": "VEN", "704": "VNM", "887": "YEM", "894": "ZMB", "716": "ZWE",
+        "008": "ALB", "031": "AZE", "112": "BLR", "498": "MDA", "646": "RWA", "705": "SVN", "834": "TZA", "818": "EGY"
     };
 
     window.onload = init;
